@@ -20,8 +20,11 @@ import { ethers } from "ethers";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = process.env.PORT || 8081;
-const MONGO = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/gravilionaire";
+const MONGO = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/Monallion";
+const allowedOrigins = [
+  "https://test-monallion.netlify.app",   // your frontend
+  "http://localhost:3000"                 // for local dev
+];
 
 // ── DB Models ──────────────────────────────────────────────────
 mongoose.set("strictQuery", false);
@@ -111,9 +114,20 @@ async function upsertQuestion(q) {
 const app = express();
 
 // Simplified CORS for localhost
-app.use(cors());
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 
-app.use(express.json({ limit: "5mb" }));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Request logger
@@ -666,5 +680,4 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () =>
   console.log(`🚀 Server running at http://localhost:${PORT}`)
-
 );
