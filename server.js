@@ -669,8 +669,6 @@ app.post("/api/admin/fund-contract", async (req, res) => {
 // ── Static frontend pages ──────────────────────────────────────
 app.use(express.static(__dirname, { extensions: ["html"] }));
 
-app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "home.html")));
-app.get("/home", (_req, res) => res.sendFile(path.join(__dirname, "home.html")));
 app.get("/paystart", (_req, res) => res.sendFile(path.join(__dirname, "paystart.html")));
 app.get("/leaderboard", (_req, res) => res.sendFile(path.join(__dirname, "topplayer.html")));
 app.get("/profile", (_req, res) => res.sendFile(path.join(__dirname, "profile.html")));
@@ -700,5 +698,3 @@ const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
-
-
