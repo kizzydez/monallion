@@ -40,7 +40,21 @@ mongoose.connect(MONGO, {
   console.error("❌ MongoDB connection error:", err.message);
 });
 
+async function connectDB() {
+  try {
+    await mongoose.connect(MONGO, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    console.log("✅ MongoDB connected");
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1);
+  }
+}
+
 connectDB();
+
 
 const QuestionSchema = new mongoose.Schema(
   {
