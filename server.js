@@ -20,22 +20,25 @@ import { ethers } from "ethers";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = process.env.PORT || 8081;
 const MONGO = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/gravilionaire";
+
+const allowedOrigins = [
+  "https://test-monallion.netlify.app",   // your frontend
+  "http://localhost:3000"                 // for local dev
+];
 
 // ── DB Models ──────────────────────────────────────────────────
 mongoose.set("strictQuery", false);
 
 // MongoDB connection
-const connectDB = async () => {
-  try {
-    await mongoose.connect(MONGO);
-    console.log("✅ Mongo connected successfully");
-  } catch (e) {
-    console.error("❌ MongoDB connection error:", e.message);
-    process.exit(1);
-  }
-};
+mongoose.connect(MONGO, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => {
+  console.log("✅ MongoDB connected");
+}).catch(err => {
+  console.error("❌ MongoDB connection error:", err.message);
+});
 
 connectDB();
 
@@ -111,9 +114,20 @@ async function upsertQuestion(q) {
 const app = express();
 
 // Simplified CORS for localhost
-app.use(cors());
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 
-app.use(express.json({ limit: "5mb" }));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Request logger
@@ -136,9 +150,19 @@ const PRIVATE_KEY = process.env.FAUCET_PRIVATE_KEY || "0xYOUR_TEST_PRIVATE_KEY";
 const RPC_URL = process.env.RPC_URL || 'https://monad-testnet.drpc.org';
 const FAUCET_CONTRACT_ADDRESS = process.env.FAUCET_CONTRACT_ADDRESS || '0x62329a958a1d7cdede57C31E89f99E4Fa55F2834';
 const TOKEN_ADDRESS = process.env.TOKEN_ADDRESS || "0x158cd43423D886384e959DD5f239111F9D02852C";
-const GAME_CONTRACT_ADDRESS = process.env.GAME_CONTRACT || "0xDBB48Bd63aa5e2Ce5ffee26B7d0080bCACB9DDeE";
+const GAME_CONTRACT_ADDRESS = process.env.GAME_CONTRACT || "0x8039e4812Abb07709595b9Ef2e523D542BeC390c";
 
 // Token Contract ABI (simplified for transfer function)
+// Example ERC20 ABI (basic)
+const TOKEN_ABI = [
+  "function approve(address spender,uint256 value) public returns(bool)",
+  "function balanceOf(address owner) public view returns(uint256)",
+  "function transfer(address to,uint256 value) public returns(bool)",
+  "function allowance(address owner,address spender) public view returns(uint256)",
+  "function decimals() public view returns(uint8)"
+];
+
+
 const GAME_ABI = [
   "function buyTicket() external",
   "function leaveGame() external",
@@ -147,7 +171,6 @@ const GAME_ABI = [
   "function hasTicket(address) view returns (bool)",
   "function entryFee() view returns (uint256)"   // ✅ add this
 ];
-
 
 // Faucet Contract ABI
 const FAUCET_ABI = [
