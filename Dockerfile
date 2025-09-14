@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 
 COPY . .
 
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 EXPOSE 8081
 ENV NODE_ENV=production
