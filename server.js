@@ -21,9 +21,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ── MongoDB Atlas Connection ──────────────────────────────────
-const MONGO =
-  process.env.MONGO_URI ||
-  mongodb://ire:Eedrees16041604@ac-abc123-shard-00-00.xdzjly6.mongodb.net:27017,ac-abc123-shard-00-01.xdzjly6.mongodb.net:27017,ac-abc123-shard-00-02.xdzjly6.mongodb.net:27017/gravilionaire?ssl=true&replicaSet=atlas-xyz-shard-0&authSource=admin&retryWrites=true&w=majority
+// server.js
+const mongoose = require("mongoose");
+require("dotenv").config();
+
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ MongoDB connected successfully"))
+.catch((err) => console.error("❌ MongoDB connection error:", err.message));
 
 
 mongoose.set("strictQuery", false);
@@ -434,5 +441,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
 
 
