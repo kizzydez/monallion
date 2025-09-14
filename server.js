@@ -23,7 +23,8 @@ const __dirname = path.dirname(__filename);
 // ── MongoDB Atlas Connection ──────────────────────────────────
 const MONGO =
   process.env.MONGO_URI ||
-  "mongodb+srv://ire:Eedrees16041604@cluster0.mongodb.net/gravilionaire?retryWrites=true&w=majority";
+  mongodb://ire:Eedrees16041604@ac-abc123-shard-00-00.xdzjly6.mongodb.net:27017,ac-abc123-shard-00-01.xdzjly6.mongodb.net:27017,ac-abc123-shard-00-02.xdzjly6.mongodb.net:27017/gravilionaire?ssl=true&replicaSet=atlas-xyz-shard-0&authSource=admin&retryWrites=true&w=majority
+
 
 mongoose.set("strictQuery", false);
 mongoose
@@ -433,4 +434,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
 
