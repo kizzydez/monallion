@@ -21,3 +21,6 @@ steps:
 
 images:
   - 'gcr.io/$PROJECT_ID/gravillionaire-backend:latest'
+  
+options:
+  logging: CLOUD_LOGGING_ONLY
