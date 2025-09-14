@@ -166,10 +166,15 @@ const TOKEN_ABI = [
 
 const GAME_ABI = [
   "function startGame() external",
+   "function ENTRY_FEE() view returns (uint256)"
   "function answerQuestion(bool correct) external",
   "function claimWinnings() external",
   "function hasTicket(address player) view returns (bool)",
   "function getPlayerState(address player) view returns (bool hasTicket, uint256 currentQuestion, uint256 winnings)",
+];
+
+const entryFee = await contract.ENTRY_FEE();
+
 ];
 
 const FAUCET_ABI = [
@@ -429,3 +434,4 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
