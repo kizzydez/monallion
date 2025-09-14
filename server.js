@@ -1,8 +1,4 @@
 // server.js
-// ───────────────────────────────────────────────────────────────
-// Backend for Gravilionaire multipage frontend (Production Ready)
-// ───────────────────────────────────────────────────────────────
-
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -21,6 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ── MongoDB Atlas Connection ──────────────────────────────────
+// MongoDB Atlas
 mongoose.set("strictQuery", false);
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -28,17 +25,14 @@ mongoose
     useUnifiedTopology: true,
     dbName: "gravilionaire",
   })
-  .then(() => console.log("✅ MongoDB Atlas connected"))
+  .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => {
-    console.error("❌ MongoDB connection error:", err.message);
+    console.error("❌ MongoDB error:", err.message);
     process.exit(1);
   });
 
-// ── Allowed Origins ───────────────────────────────────────────
-const allowedOrigins = [
-  "https://test-monallion.netlify.app", // production frontend
-  "http://localhost:3000", // dev
-];
+// Allowed origins
+const allowedOrigins = ["https://test-monallion.netlify.app", "http://localhost:3000"];
 
 // ── DB Models ─────────────────────────────────────────────────
 const QuestionSchema = new mongoose.Schema(
@@ -434,4 +428,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
 
