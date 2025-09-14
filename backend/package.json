@@ -1,7 +1,7 @@
 {
-  "name": "monallion",
+  "name": "Monallion",
   "version": "1.0.0",
-  "description": "Blockchain quiz game",
+  "description": "Blockchain-based quiz game with crypto rewards",
   "main": "server.js",
   "type": "module",
   "scripts": {
