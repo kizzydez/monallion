@@ -178,13 +178,13 @@ const TOKEN_ABI = [
 
 
 const GAME_ABI = [
-  "function buyTicket() external",
-  "function leaveGame() external",
-  "function adminResetPlayer(address player) external",
-  "function payoutTo(address to, uint256 amount) external",
-  "function hasTicket(address) view returns (bool)",
-  "function entryFee() view returns (uint256)"   // ✅ add this
+  "function startGame() external",
+  "function answerQuestion(bool correct) external",
+  "function claimWinnings() external",
+  "function hasTicket(address player) view returns (bool)",
+  "function getPlayerState(address player) view returns (bool hasTicket, uint256 currentQuestion, uint256 winnings)"
 ];
+
 
 // Faucet Contract ABI
 const FAUCET_ABI = [
@@ -698,3 +698,4 @@ const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
