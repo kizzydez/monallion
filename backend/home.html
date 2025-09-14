@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Who Wants to be a Monallion</title>
+  <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #0E100F, #200052 50%, #0E100F 100%); 
+            min-height: 100vh; 
+            overflow-x: hidden; 
+            position: relative; 
+            color: #FBFAF9;
+        }
+        
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #836EF9;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #836EF9, 0 0 20px #836EF9, 0 0 30px #836EF9;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0); opacity: .3; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+        
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(131, 110, 249, 0.3);
+            box-shadow: 0 1px 20px rgba(131, 110, 249, 0.1);
+        }
+        
+        .logo {
+            font-family: 'Orbitron', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            color: #836EF9;
+            text-shadow: 0 0 20px rgba(131, 110, 249, 0.8), 0 0 40px rgba(131, 110, 249, 0.4);
+        }
+        
+        .wallet-container { 
+            position: relative; 
+            margin-right: 20px;
+        }
+        
+        .connect-wallet-btn {
+            background: linear-gradient(45deg, #836EF9, #A0055D);
+            color: #FBFAF9;
+            border: 2px solid rgba(131, 110, 249, 0.5);
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(131, 110, 249, 0.4), 0 0 20px rgba(131, 110, 249, 0.2);
+        }
+        
+        .connect-wallet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(131, 110, 249, 0.6), 0 0 30px rgba(131, 110, 249, 0.4);
+            border-color: rgba(131, 110, 249, 0.8);
+        }
+        
+        .dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            margin-top: 10px;
+            background: #200052;
+            border: 1px solid rgba(131, 110, 249, 0.4);
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(131, 110, 249, 0.3);
+            overflow: hidden;
+            z-index: 10;
+            width: 180px;
+        }
+        
+        .dropdown a {
+            display: block;
+            padding: 10px 20px;
+            color: #FBFAF9;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+        
+        .dropdown a:hover {
+            background: rgba(131, 110, 249, 0.2);
+        }
+        
+        .wallet-container.active .dropdown {
+            display: block;
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 80px 0;
+        }
+        
+        .hero h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            background: linear-gradient(45deg, #836EF9, #FBFAF9, #A0055D, #836EF9);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s ease-in-out infinite;
+            margin-bottom: 20px;
+            text-shadow: 0 0 50px rgba(131, 110, 249, 0.6);
+            filter: drop-shadow(0 0 20px rgba(131, 110, 249, 0.4));
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .hero h2 {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            color: #FBFAF9;
+            margin-bottom: 30px;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            color: #d8d8e9;
+            max-width: 600px;
+            margin: 0 auto 50px;
+            line-height: 1.6;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .play-btn {
+            background: linear-gradient(45deg, #836EF9, #A0055D);
+            color: #FBFAF9;
+            border: 2px solid rgba(131, 110, 249, 0.6);
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 6px 20px rgba(131, 110, 249, 0.4), 0 0 25px rgba(131, 110, 249, 0.3);
+        }
+        
+        .play-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(131, 110, 249, 0.6), 0 0 40px rgba(131, 110, 249, 0.5);
+            border-color: rgba(131, 110, 249, 0.9);
+        }
+    </style>
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+
+  <div class="container">
+    <header class="header">
+      <div class="logo">MONALIONAIRE</div>
+      <div class="wallet-container" id="walletContainer">
+        <button class="connect-wallet-btn" id="connectWalletBtn">Connect Wallet</button>
+        <div class="dropdown" id="walletDropdown">
+          <a href="/profile.html">Profile</a>
+          <a href="/faucet.html">Faucet</a>
+          <a href="/leaderboard.html">Leaderboard</a>
+          <a href="#" id="disconnectBtn">Disconnect</a>
+        </div>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h1>WHO WANTS TO BE A</h1>
+      <h2>MONALIONAIRE?</h2>
+      <p>
+        Test your knowledge, earn crypto rewards, and climb the ladder to become the
+        ultimate Monalionaire. Connect your wallet and start your journey to digital
+        riches!
+      </p>
+
+      <div class="cta-buttons">
+        <button class="play-btn" id="startGameBtn">Start Playing</button>
+      </div>
+    </section>
+  </div>
+  <!-- Load scripts only once at the bottom -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script>
+const TARGET_CHAIN_ID = "0x279f"; // 10143
+const TARGET_CHAIN_NAME = "Monad Testnet";
+const RPC_URL = "https://rpc.ankr.com/monad_testnet";
+const BLOCK_EXPLORER = "https://monad-testnet.socialscan.io/";
+
+let provider, signer, userAddress;
+const btn = document.getElementById("connectWalletBtn");
+const walletContainer = document.getElementById("walletContainer");
+
+async function updateWalletButtonUI() {
+  if (userAddress) {
+    const truncated = `${userAddress.substring(0,6)}...${userAddress.substring(userAddress.length-4)}`;
+    btn.textContent = `✅ ${truncated}`;
+    btn.onclick = () => walletContainer.classList.toggle("active");
+  } else {
+    btn.textContent = "🔌 Connect Wallet";
+    btn.onclick = connectWallet;
+  }
+}
+
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert("Please install MetaMask or OKX Wallet!");
+    return;
+  }
+
+  provider = new ethers.providers.Web3Provider(window.ethereum);
+  try {
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+    const chainId = await provider.send("eth_chainId", []);
+    if (chainId !== TARGET_CHAIN_ID) await switchNetwork();
+
+    signer = provider.getSigner();
+    userAddress = await signer.getAddress();
+    localStorage.setItem("wallet", userAddress);
+    updateWalletButtonUI();
+    alert("Wallet connected successfully!");
+  } catch (err) {
+    console.error(err);
+    alert("Wallet connection failed!");
+  }
+}
+
+async function switchNetwork() {
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: TARGET_CHAIN_ID }]
+    });
+  } catch (err) {
+    if (err.code === 4902) {
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId: TARGET_CHAIN_ID,
+          chainName: TARGET_CHAIN_NAME,
+          rpcUrls: [RPC_URL],
+          blockExplorerUrls: [BLOCK_EXPLORER],
+          nativeCurrency: { name: "Monad", symbol: "MON", decimals: 18 }
+        }]
+      });
+    } else {
+      console.error(err);
+      alert("Please switch network manually to " + TARGET_CHAIN_NAME);
+    }
+  }
+}
+
+function disconnectWallet() {
+  localStorage.removeItem("wallet");
+  userAddress = null;
+  provider = null;
+  signer = null;
+  updateWalletButtonUI();
+  alert("Wallet disconnected");
+}
+
+// On page load
+document.addEventListener("DOMContentLoaded", async () => {
+  const savedWallet = localStorage.getItem("wallet");
+  if (savedWallet && window.ethereum) {
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    signer = provider.getSigner();
+    try {
+      const accounts = await provider.listAccounts();
+      if (accounts.includes(savedWallet)) userAddress = savedWallet;
+    } catch {}
+  }
+  updateWalletButtonUI();
+
+  document.getElementById("disconnectBtn").addEventListener("click", disconnectWallet);
+  document.getElementById("startGameBtn").addEventListener("click", () => {
+    if (!userAddress) return alert("Please connect your wallet first!");
+    window.location.href = "/paystart";
+  });
+});
+</script>
+</body>
+</html>

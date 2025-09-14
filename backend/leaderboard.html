@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Leaderboard - Monalionaire</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    /* ---------- CSS copied from your previous leaderboard.html ---------- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0E100F 0%, #200052 30%, #0E100F 70%, #200052 100%); min-height: 100vh; overflow-x: hidden; position: relative; color: #FBFAF9; }
+    .particles{ position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; }
+    .particle{ position:absolute; width:2px; height:2px; background:#836EF9; border-radius:50%; box-shadow:0 0 10px #836EF9,0 0 20px rgba(131,110,249,0.7),0 0 30px rgba(131,110,249,0.5); animation:float 6s ease-in-out infinite; }
+    @keyframes float{0%,100%{transform:translateY(0) rotate(0);opacity:.3;}50%{transform:translateY(-20px) rotate(180deg);opacity:1;}}
+    .container{position:relative; z-index:2; max-width:1200px; margin:0 auto; padding:0 20px;}
+    .header{ display:flex; justify-content:space-between; align-items:center; padding:20px 0; border-bottom:1px solid rgba(131,110,249,.3); box-shadow:0 1px 20px rgba(131,110,249,.1); background:rgba(14,16,15,.8); backdrop-filter:blur(10px);}
+    .logo{ font-family:'Orbitron', monospace; font-size:24px; font-weight:700; color:#836EF9; text-shadow:0 0 20px rgba(131,110,249,.8),0 0 40px rgba(131,110,249,.4);}
+    .wallet-container{ position:relative; margin-right:20px;}
+    .connect-wallet-btn{ background:linear-gradient(45deg,#836EF9,#A0055D); color:#FBFAF9; border:2px solid rgba(131,110,249,.5); padding:12px 24px; border-radius:50px; font-weight:600; cursor:pointer; transition:all .3s ease; box-shadow:0 4px 15px rgba(131,110,249,.4),0 0 20px rgba(131,110,249,.2); font-family:'Orbitron', monospace;}
+    .connect-wallet-btn:hover{ transform:translateY(-2px); box-shadow:0 8px 25px rgba(131,110,249,.6),0 0 30px rgba(131,110,249,.4); border-color:rgba(131,110,249,.8); background:linear-gradient(45deg,#A0055D,#836EF9);}
+    .dropdown{ display:none; position:absolute; right:0; margin-top:10px; background:rgba(32,0,82,.95); border:1px solid rgba(131,110,249,.4); border-radius:10px; overflow:hidden; z-index:10; width:180px; backdrop-filter:blur(10px);}
+    .wallet-container.active .dropdown{ display:block; }
+    .dropdown a, .dropdown button{ display:block; padding:10px 20px; color:#FBFAF9; background:none; border:none; cursor:pointer; text-align:left; text-decoration:none; width:100%; transition:all 0.2s ease;}
+    .dropdown a:hover, .dropdown button:hover{ background:rgba(131,110,249,.2); padding-left:25px;}
+    .leaderboard-container{ padding:40px 0; }
+    .leaderboard-header{ text-align:center; margin-bottom:40px; background:linear-gradient(135deg, rgba(131,110,249,.1), rgba(32,0,82,.05)); border:2px solid rgba(131,110,249,.4); border-radius:25px; padding:40px; backdrop-filter:blur(5px);}
+    .leaderboard-title{ font-family:'Orbitron', monospace; font-size:3rem; font-weight:900; color:#836EF9; margin-bottom:15px; text-shadow:0 0 30px rgba(131,110,249,.8);}
+    .leaderboard-subtitle{ color:#836EF9; font-size:1.2rem; font-weight:600;}
+    .podium{ display:flex; justify-content:center; gap:20px; margin-bottom:40px;}
+    .podium-player{ text-align:center; width:180px; transition:transform 0.3s ease;}
+    .podium-player:hover{ transform:translateY(-5px);}
+    .podium-rank{ font-family:'Orbitron', monospace; font-size:2rem; font-weight:900; margin-bottom:10px;}
+    .podium-avatar{ width:80px; height:80px; border-radius:50%; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; font-size:2rem; box-shadow:0 0 20px rgba(131,110,249,.7); color:#FBFAF9;}
+    .podium-name{ font-weight:700; margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#FBFAF9;}
+    .podium-wallet{ font-size:.8rem; color:#d8d8e9; margin-bottom:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .podium-winnings{ font-family:'Orbitron', monospace; font-weight:700; color:#836EF9;}
+    .podium-player:nth-child(1) .podium-rank{ color:#FFD700; }
+    .podium-player:nth-child(1) .podium-avatar{ box-shadow:0 0 30px #FFD700,0 0 40px #FFD700; background:radial-gradient(circle,#FFD700,#daa520);}
+    .podium-player:nth-child(2) .podium-rank{ color:#C0C0C0;}
+    .podium-player:nth-child(2) .podium-avatar{ box-shadow:0 0 25px #C0C0C0,0 0 35px #C0C0C0; background:radial-gradient(circle,#C0C0C0,#a0a0a0);}
+    .podium-player:nth-child(3) .podium-rank{ color:#CD7F32;}
+    .podium-player:nth-child(3) .podium-avatar{ box-shadow:0 0 20px #CD7F32,0 0 30px #CD7F32; background:radial-gradient(circle,#CD7F32,#8a5520);}
+    .leaderboard-table{ background:linear-gradient(135deg, rgba(131,110,249,.1), rgba(32,0,82,.05)); border:2px solid rgba(131,110,249,.3); border-radius:20px; overflow:hidden; backdrop-filter:blur(5px);}
+    .table-header{ background:linear-gradient(135deg, rgba(131,110,249,.2), rgba(32,0,82,.1)); padding:20px; display:grid; grid-template-columns:80px 60px 1fr 120px 120px 150px; gap:20px; font-weight:700; color:#836EF9;}
+    .table-body{ max-height:600px; overflow-y:auto;}
+    .player-row{ padding:15px 20px; display:grid; grid-template-columns:80px 60px 1fr 120px 120px 150px; gap:20px; align-items:center; border-bottom:1px solid rgba(131,110,249,.1); cursor:pointer; transition:all 0.2s ease;}
+    .player-row:hover{ background:rgba(131,110,249,.1); transform:translateX(5px);}
+    .player-row.current-user{ background:rgba(131,110,249,.2); border:1px solid rgba(131,110,249,.3);}
+    .rank-number{ font-family:'Orbitron', monospace; font-size:1.2rem; font-weight:700; color:#836EF9;}
+    .player-avatar-small{ width:40px; height:40px; border-radius:50%; background:linear-gradient(45deg,#836EF9,#A0055D); display:flex; align-items:center; justify-content:center; color:#FBFAF9;}
+    .player-name{ color:#FBFAF9; font-weight:600; font-size:1rem;}
+    .player-wallet{ color:#d8d8e9; font-size:.8rem; font-family:'Orbitron', monospace;}
+    .player-tier{ padding:4px 8px; border-radius:8px; font-size:.7rem; font-weight:600; text-align:center;}
+    .tier-overlord{ background:linear-gradient(45deg,#FFD700,#ffed4e); color:#1a0d2e;}
+    .tier-celestial{ background:linear-gradient(45deg,#C0C0C0,#e5e5e5); color:#1a0d2e;}
+    .tier-dao{ background:linear-gradient(45deg,#CD7F32,#d4af37); color:#1a0d2e;}
+    .tier-primal{ background:linear-gradient(45deg,#FF69B4,#ffb6c1); color:#1a0d2e;}
+    .tier-saint{ background:linear-gradient(45deg,#87CEEB,#b9f2ff); color:#1a0d2e;}
+    .tier-monarch{ background:linear-gradient(45deg,#800080,#c084fc); color:#fff;}
+    .tier-emperor{ background:linear-gradient(45deg,#228B22,#32CD32); color:#1a0d2e;}
+    .tier-godking{ background:linear-gradient(45deg,#1E90FF,#87CEFA); color:#1a0d2e;}
+    .tier-adventurer{ background:linear-gradient(45deg,#808080,#a9a9a9); color:#1a0d2e;}
+    .wins-count{ font-family:'Orbitron', monospace; font-size:1.1rem; font-weight:700; color:#10b981;}
+    .total-payout{ font-family:'Orbitron', monospace; font-size:1.1rem; font-weight:700; color:#836EF9;}
+    .loading{ text-align:center; padding:40px; color:#836EF9; font-size:1.1rem;}
+    .loading-spinner{ width:40px; height:40px; border:4px solid rgba(131,110,249,.3); border-top:4px solid #836EF9; border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 20px;}
+    @keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+    .leaderboard-controls{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:15px;}
+    .search-box{ flex:1; max-width:400px; position:relative;}
+    .search-input{ width:100%; padding:12px 15px 12px 40px; border-radius:50px; border:1px solid rgba(131,110,249,.4); background:rgba(131,110,249,.1); color:#FBFAF9; font-size:1rem;}
+    .search-input:focus{ outline:none; border-color:#836EF9; box-shadow:0 0 10px rgba(131,110,249,.5);}
+    .search-icon{ position:absolute; left:15px; top:50%; transform:translateY(-50%); color:#836EF9;}
+    .filter-select{ padding:12px 15px; border-radius:50px; border:1px solid rgba(131,110,249,.4); background:rgba(131,110,249,.1); color:#FBFAF9; font-size:1rem; cursor:pointer;}
+    .filter-select:focus{ outline:none; border-color:#836EF9;}
+    .filter-select option{ background:#200052;}
+    @media(max-width:768px){ .table-header,.player-row{ grid-template-columns:60px 50px 1fr 100px 100px 120px; gap:10px; padding:10px 15px;} .leaderboard-title{ font-size:2rem;} .leaderboard-header{ padding:25px;} .podium{ flex-direction:column; align-items:center;} .podium-player{ width:100%; max-width:250px;} .leaderboard-controls{ flex-direction:column; align-items:stretch;} .search-box{ max-width:100%; } }
+  </style>
+</head>
+<body>
+  <!-- Background particles -->
+  <div class="particles" id="particles"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">MONALIONAIRE</div>
+      <div class="wallet-container" id="walletContainer">
+        <button class="connect-wallet-btn" id="connectWalletBtn">Connect Wallet</button>
+        <div class="dropdown" id="walletDropdown">
+          <a href="/home.html">Home</a>
+          <a href="/profile.html">Profile</a>
+          <a href="/faucet.html">Faucet</a>
+          <a href="#" id="disconnectBtn">Disconnect</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Leaderboard -->
+    <div class="leaderboard-container">
+      <div class="leaderboard-header">
+        <h1 class="leaderboard-title">🏆 LEADERBOARD</h1>
+        <p class="leaderboard-subtitle">Top Monalionaire Champions</p>
+      </div>
+
+      <!-- Podium for top 3 players -->
+      <div class="podium" id="podium"></div>
+
+      <!-- Search and filter controls -->
+      <div class="leaderboard-controls">
+        <div class="search-box">
+          <div class="search-icon">🔍</div>
+          <input type="text" id="searchInput" class="search-input" placeholder="Search players..."/>
+        </div>
+        <select class="filter-select" id="tierFilter">
+          <option value="all">All Tiers</option>
+          <option value="overlord">Overlord</option>
+          <option value="celestial">Celestial Realm</option>
+          <option value="dao">Dao-Venerable</option>
+          <option value="primal">Primal Ancestor</option>
+          <option value="saint">True Saint</option>
+          <option value="monarch">Heavenly Monarch</option>
+          <option value="emperor">Emperor</option>
+          <option value="godking">God King</option>
+          <option value="adventurer">Adventurer</option>
+        </select>
+      </div>
+
+      <!-- Leaderboard table -->
+      <div class="leaderboard-table">
+        <div class="table-header">
+          <div>Rank</div>
+          <div>Avatar</div>
+          <div>Player</div>
+          <div>Tier</div>
+          <div>Games</div>
+          <div>Winnings</div>
+        </div>
+        <div class="table-body" id="leaderboardBody">
+          <div class="loading" id="loadingState">
+            <div class="loading-spinner"></div> 
+            Loading leaderboard...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://monallion-production.up.railway.app"; // Your backend API
+
+    // Create background particles
+    function createParticles() {
+      const container = document.getElementById('particles');
+      if(!container) return;
+      for(let i=0;i<50;i++){
+        const particle=document.createElement('div');
+        particle.classList.add('particle');
+        particle.style.left = Math.random()*100+'%';
+        particle.style.top = Math.random()*100+'%';
+        particle.style.animationDelay = Math.random()*5+'s';
+        particle.style.animationDuration = (3+Math.random()*5)+'s';
+        container.appendChild(particle);
+      }
+    }
+
+    function getTierDetails(rank){
+      if(rank>=1 && rank<=10) return {tier:"Overlord", class:"tier-overlord"};
+      if(rank>=11 && rank<=25) return {tier:"Celestial Realm", class:"tier-celestial"};
+      if(rank>=26 && rank<=50) return {tier:"Dao-Venerable", class:"tier-dao"};
+      if(rank>=51 && rank<=100) return {tier:"Primal Ancestor", class:"tier-primal"};
+      if(rank>=101 && rank<=250) return {tier:"True Saint", class:"tier-saint"};
+      if(rank>=251 && rank<=500) return {tier:"Heavenly Monarch", class:"tier-monarch"};
+      if(rank>=501 && rank<=750) return {tier:"Emperor", class:"tier-emperor"};
+      if(rank>=751 && rank<=1000) return {tier:"God King", class:"tier-godking"};
+      return {tier:"Adventurer", class:"tier-adventurer"};
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      createParticles();
+      const walletContainer = document.getElementById('walletContainer');
+      const connectBtn = document.getElementById('connectWalletBtn');
+      const disconnectBtn = document.getElementById('disconnectBtn');
+      const searchInput = document.getElementById('searchInput');
+      const tierFilter = document.getElementById('tierFilter');
+
+      let leaderboardData=[], filteredData=[];
+      const userAddress = localStorage.getItem('wallet');
+
+      if(userAddress) connectBtn.textContent=`✅ ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+
+      connectBtn.addEventListener('click', async e=>{
+        e.stopPropagation();
+        if(!userAddress) await connectWallet();
+        else walletContainer.classList.toggle('active');
+      });
+
+      disconnectBtn.addEventListener('click', e=>{
+        e.preventDefault();
+        localStorage.removeItem('wallet');
+        walletContainer.classList.remove('active');
+        connectBtn.textContent='Connect Wallet';
+      });
+
+      document.addEventListener('click', e=>{
+        if(!walletContainer.contains(e.target)) walletContainer.classList.remove('active');
+      });
+
+      searchInput.addEventListener('input', filterLeaderboard);
+      tierFilter.addEventListener('change', filterLeaderboard);
+
+      async function connectWallet(){
+        if(!window.ethereum){ alert('Install MetaMask!'); return;}
+        const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
+        if(accounts.length>0){
+          localStorage.setItem('wallet', accounts[0]);
+          connectBtn.textContent=`✅ ${accounts[0].slice(0,6)}...${accounts[0].slice(-4)}`;
+        }
+      }
+
+      async function fetchLeaderboard(){
+        try{
+          const res = await fetch(`${API_BASE}/api/leaderboard`);
+          const data = await res.json();
+          if(data.ok && data.players){
+            leaderboardData = data.players.map((p,i)=>({...p, rank:i+1}));
+            filteredData = [...leaderboardData];
+            renderLeaderboard();
+            renderPodium();
+          } else throw new Error('Invalid response');
+        }catch(e){
+          console.error('Error loading leaderboard', e);
+          document.getElementById('loadingState').textContent='⚠️ Failed to load leaderboard.';
+        }
+      }
+
+      function getPlayerAvatar(player){
+        if(player.avatar){
+          if(player.avatarType==='emoji') return `<span>${player.avatar}</span>`;
+          if(player.avatarType==='image') return `<img src="${player.avatar}" alt="Profile Avatar" style="width:100%;height:100%;border-radius:50%"/>`;
+        }
+        return '<span>👤</span>';
+      }
+
+      function getPlayerDisplayName(player){
+        return player.name || `Player ${player.rank}`;
+      }
+
+      function renderPodium(){
+        const podium = document.getElementById('podium');
+        podium.innerHTML='';
+        leaderboardData.slice(0,3).forEach(player=>{
+          const div=document.createElement('div');
+          div.className='podium-player';
+          div.innerHTML=`
+            <div class="podium-rank">#${player.rank}</div>
+            <div class="podium-avatar">${getPlayerAvatar(player)}</div>
+            <div class="podium-name">${getPlayerDisplayName(player)}</div>
+            <div class="podium-wallet">${player.wallet.slice(0,6)}...${player.wallet.slice(-4)}</div>
+            <div class="podium-winnings">${Number(player.payout||0).toLocaleString()} OGMN</div>
+          `;
+          podium.appendChild(div);
+        });
+      }
+
+      function filterLeaderboard(){
+        const searchTerm = searchInput.value.toLowerCase();
+        const tierValue = tierFilter.value;
+        filteredData = leaderboardData.filter(player=>{
+          const name = getPlayerDisplayName(player).toLowerCase();
+          const tierInfo = getTierDetails(player.rank);
+          return (name.includes(searchTerm) || player.wallet.toLowerCase().includes(searchTerm))
+                 && (tierValue==='all' || tierInfo.tier.toLowerCase().includes(tierValue));
+        });
+        renderLeaderboard();
+      }
+
+      function renderLeaderboard(){
+        const tbody = document.getElementById('leaderboardBody');
+        tbody.innerHTML='';
+        if(!filteredData.length){
+          tbody.innerHTML='<div class="loading">No players found</div>';
+          return;
+        }
+        filteredData.forEach(player=>{
+          const tierInfo = getTierDetails(player.rank);
+          const isUser = userAddress && player.wallet.toLowerCase()===userAddress.toLowerCase();
+          const row = document.createElement('div');
+          row.className=`player-row ${isUser?'current-user':''}`;
+          row.innerHTML=`
+            <div class="rank-number">#${player.rank}</div>
+            <div class="player-avatar-small">${getPlayerAvatar(player)}</div>
+            <div>
+              <div class="player-name">${getPlayerDisplayName(player)}</div>
+              <div class="player-wallet">${player.wallet.slice(0,6)}...${player.wallet.slice(-4)}</div>
+            </div>
+            <div class="player-tier ${tierInfo.class}">${tierInfo.tier}</div>
+            <div class="wins-count">${player.wins||0}</div>
+            <div class="total-payout">${Number(player.payout||0).toLocaleString()} OGMN</div>
+          `;
+          tbody.appendChild(row);
+        });
+        document.getElementById('loadingState').style.display='none';
+      }
+
+      fetchLeaderboard();
+    });
+  </script>
+</body>
+</html>
