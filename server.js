@@ -21,21 +21,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ── MongoDB Atlas Connection ──────────────────────────────────
-// server.js
-const mongoose = require("mongoose");
-require("dotenv").config();
-
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ MongoDB connected successfully"))
-.catch((err) => console.error("❌ MongoDB connection error:", err.message));
-
-
 mongoose.set("strictQuery", false);
 mongoose
-  .connect(MONGO, {
+  .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     dbName: "gravilionaire",
@@ -441,6 +429,3 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-
-
-
