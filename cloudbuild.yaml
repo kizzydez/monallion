@@ -1,11 +1,11 @@
 steps:
   # Step 1: Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/gravillionaire-backend:latest', '.']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/monallion:latest', '.']
 
   # Step 2: Push the image to Google Artifact Registry / Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/gravillionaire-backend:latest']
+    args: ['push', 'gcr.io/$PROJECT_ID/monallion:latest']
 
   # Step 3 (Optional): Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -14,13 +14,13 @@ steps:
       - 'run'
       - 'deploy'
       - 'gravillionaire-backend'
-      - '--image=gcr.io/$PROJECT_ID/gravillionaire-backend:latest'
+      - '--image=gcr.io/$PROJECT_ID/monallion:latest'
       - '--platform=managed'
       - '--region=us-central1'
       - '--allow-unauthenticated'
 
 images:
-  - 'gcr.io/$PROJECT_ID/gravillionaire-backend:latest'
+  - 'gcr.io/$PROJECT_ID/monallion:latest'
   
 options:
   logging: CLOUD_LOGGING_ONLY
