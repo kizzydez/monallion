@@ -2,8 +2,10 @@ FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
+# Copy all files (ensures package.json is included)
 COPY . .
 
+# Install only production dependencies (without lockfile requirement)
 RUN npm install --omit=dev
 
 EXPOSE 8081
