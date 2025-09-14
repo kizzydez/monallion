@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pay to Play - Monalionaire</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0E100F 0%, #200052 50%, #0E100F 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: #FBFAF9;
+    }
+    .header {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:20px;
+      border-bottom:1px solid rgba(131, 110, 249, 0.3);
+      box-shadow:0 1px 20px rgba(131, 110, 249, 0.1);
+      background: rgba(14, 16, 15, 0.8);
+    }
+    .logo {
+      font-family:'Orbitron', monospace;
+      font-size:24px; font-weight:700; color:#836EF9;
+      text-shadow:0 0 20px rgba(131, 110, 249, 0.8);
+    }
+    .wallet-container { position:relative; margin-right: 20px; }
+    .connect-wallet-btn {
+      background:linear-gradient(45deg, #836EF9, #A0055D);
+      color:#FBFAF9; border:2px solid rgba(131, 110, 249, 0.5);
+      padding:12px 24px; border-radius:50px; font-weight:600;
+      cursor:pointer; transition:.3s;
+      box-shadow:0 4px 15px rgba(131, 110, 249, 0.4);
+    }
+    .connect-wallet-btn:hover {
+      transform:translateY(-2px);
+      box-shadow:0 8px 25px rgba(131, 110, 249, 0.6);
+      background:linear-gradient(45deg, #A0055D, #836EF9);
+    }
+    .dropdown {
+      display:none; position:absolute; right:0; margin-top:10px;
+      background:#200052; border:1px solid rgba(131, 110, 249, 0.4);
+      border-radius:10px; overflow:hidden; z-index:10;
+      width: 180px;
+    }
+    .wallet-container.active .dropdown { display:block; }
+    .dropdown a, .dropdown button {
+      display:block; padding:10px 20px; color:#FBFAF9;
+      background:none; border:none; cursor:pointer;
+      text-align:left; text-decoration:none;
+      width: 100%;
+      transition: all 0.2s ease;
+    }
+    .dropdown a:hover, .dropdown button:hover { 
+      background:rgba(131, 110, 249, 0.2);
+      padding-left: 25px;
+    }
+    .payment-section {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      min-height:80vh; text-align:center; padding:40px 0;
+    }
+    .payment-title {
+      font-family:'Orbitron', monospace;
+      font-size:clamp(2rem,6vw,3.5rem);
+      font-weight:900;
+      background:linear-gradient(45deg, #836EF9, #FBFAF9, #A0055D);
+      -webkit-background-clip:text; 
+      -webkit-text-fill-color:transparent;
+      background-clip: text;
+      margin:30px 0;
+      text-shadow: 0 0 30px rgba(131, 110, 249, 0.5);
+    }
+    .payment-buttons { display:flex; gap:30px; flex-wrap:wrap; justify-content:center; margin-top: 20px; }
+    .agree-btn,.disagree-btn {
+      padding:20px 50px; border-radius:50px; font-size:1.1rem;
+      font-weight:700; cursor:pointer; transition:.3s;
+      font-family:'Orbitron', monospace;
+      border: 2px solid transparent;
+    }
+    .agree-btn { 
+      background:linear-gradient(45deg, #836EF9, #A0055D); 
+      color:#FBFAF9; 
+      box-shadow:0 4px 15px rgba(131, 110, 249, 0.4);
+    }
+    .agree-btn:hover {
+      transform: translateY(-3px);
+      box-shadow:0 8px 25px rgba(131, 110, 249, 0.6);
+      border-color: rgba(131, 110, 249, 0.5);
+    }
+    .disagree-btn { 
+      background:linear-gradient(45deg, #200052, #0E100F); 
+      color:#FBFAF9;
+      border: 2px solid rgba(131, 110, 249, 0.3);
+      box-shadow:0 4px 15px rgba(14, 16, 15, 0.4);
+    }
+    .disagree-btn:hover {
+      transform: translateY(-3px);
+      box-shadow:0 8px 25px rgba(14, 16, 15, 0.6);
+      border-color: rgba(160, 5, 93, 0.3);
+    }
+    .token-info {
+      background:rgba(32, 0, 82, 0.3); 
+      border:2px solid rgba(131, 110, 249, 0.3);
+      border-radius:20px; padding:30px; margin-bottom:30px;
+      max-width:500px; box-shadow:0 0 20px rgba(131, 110, 249, 0.2);
+      backdrop-filter: blur(5px);
+    }
+    .token-amount {
+      font-family:'Orbitron', monospace; font-size:2.5rem; font-weight:900;
+      color:#836EF9;
+      text-shadow: 0 0 15px rgba(131, 110, 249, 0.5);
+    }
+    .token-label { font-size:1.1rem; color:#836EF9; margin:10px 0; font-weight: 600; }
+    .quiz-info { color:#d8d8e9; font-size:.95rem; margin-top: 15px; }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">MONALIONAIRE</div>
+    <div class="wallet-container" id="walletContainer">
+      <button class="connect-wallet-btn" id="connectWalletBtn">🔌 Connect Wallet</button>
+      <div class="dropdown" id="walletDropdown">
+        <a href="/home.html"> Home</a>
+        <a href="/profile.html"> Profile</a>
+        <a href="/faucet.html"> Faucet</a>
+        <a href="/leaderboard.html"> Leaderboard</a>
+        <a href="#" id="disconnectBtn"> Disconnect</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Payment -->
+  <section class="payment-section">
+    <div class="token-info">
+      <div class="token-amount" id="entryFee">100</div>
+      <div class="token-label">QUIZ TOKENS</div>
+      <div class="quiz-info">
+        Required to participate in the quiz challenge.<br>
+        Tokens will be deducted from your wallet upon agreement.
+      </div>
+    </div>
+    <h1 class="payment-title">PAY 100 QUIZ TOKENS TO QUIZ?</h1>
+    <div class="payment-buttons">
+      <button class="agree-btn" id="agreeBtn"> I AGREE</button>
+      <button class="disagree-btn" id="disagreeBtn"> I DISAGREE</button>
+    </div>
+  </section>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script>
+  // ===== MONAD TESTNET CONFIG =====
+  const TARGET_CHAIN_ID = "0x279f"; // 10143
+  const TARGET_CHAIN_NAME = "Monad Testnet";
+  const RPC_URL = "https://rpc.ankr.com/monad_testnet";
+  const BLOCK_EXPLORER = "https://monad-testnet.socialscan.io/";
+
+  // ===== GAME & TOKEN CONFIG =====
+  const CONFIG = {
+    token: { address: "0x158cd43423D886384e959DD5f239111F9D02852C" },
+    contract: { address: "0xc461CdF35f2A17f5c9a777fa11C554583127712c" }
+  };
+
+  const GAME_ABI = [
+    "function startGame() external",
+    "function hasActiveTicket(address player) view returns (bool)",
+    "function ENTRY_FEE() view returns (uint256)"  // ✅ if contract uses ENTRY_FEE
+  ];
+
+  const TOKEN_ABI = [
+    "function approve(address spender,uint256 value) public returns(bool)",
+    "function balanceOf(address owner) public view returns(uint256)",
+    "function allowance(address owner,address spender) public view returns(uint256)",
+    "function decimals() public view returns(uint8)"
+  ];
+
+  let provider, signer, userAddress;
+
+  async function ensureProvider() {
+    if (!window.ethereum) throw new Error("No wallet provider");
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    const chainId = await provider.send("eth_chainId", []);
+    if (chainId !== TARGET_CHAIN_ID) await switchNetwork();
+    signer = provider.getSigner();
+    userAddress = await signer.getAddress();
+    localStorage.setItem("wallet", userAddress);
+    updateWalletUI();
+  }
+
+  async function connectWallet() {
+    await ensureProvider();
+    alert("Wallet connected successfully!");
+  }
+
+  function disconnectWallet() {
+    localStorage.removeItem("wallet");
+    userAddress = null;
+    provider = null;
+    signer = null;
+    updateWalletUI();
+    alert("Wallet disconnected");
+  }
+
+  function updateWalletUI() {
+    const btn = document.getElementById("connectWalletBtn");
+    const walletContainer = document.getElementById("walletContainer");
+    if (userAddress) {
+      btn.textContent = "✅ " + userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+      btn.onclick = () => walletContainer.classList.toggle("active");
+    } else {
+      btn.textContent = "🔌 Connect Wallet";
+      btn.onclick = connectWallet;
+    }
+  }
+
+  async function switchNetwork() {
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: TARGET_CHAIN_ID }]
+      });
+    } catch (err) {
+      if (err.code === 4902) {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: TARGET_CHAIN_ID,
+            chainName: TARGET_CHAIN_NAME,
+            rpcUrls: [RPC_URL],
+            blockExplorerUrls: [BLOCK_EXPLORER],
+            nativeCurrency: { name: "Monad", symbol: "MON", decimals: 18 }
+          }]
+        });
+      } else {
+        console.error(err);
+        alert("Please switch network manually to " + TARGET_CHAIN_NAME);
+      }
+    }
+  }
+
+  async function handleAgree() {
+    const btn = document.getElementById("agreeBtn");
+    btn.textContent = "⏳ PROCESSING...";
+    btn.disabled = true;
+    try {
+      await ensureProvider();
+      if (!userAddress) await connectWallet();
+
+      const token = new ethers.Contract(CONFIG.token.address, TOKEN_ABI, signer);
+      const contract = new ethers.Contract(CONFIG.contract.address, GAME_ABI, signer);
+
+      const entryFee = await contract.entryFee();
+      const decimals = await token.decimals();
+      const feeHuman = ethers.utils.formatUnits(entryFee, decimals);
+      document.getElementById("entryFee").textContent = feeHuman;
+
+      const balance = await token.balanceOf(userAddress);
+      if (balance.lt(entryFee)) {
+        alert(`Insufficient balance! You need at least ${feeHuman} QUIZ.`);
+        return;
+      }
+
+      const allowance = await token.allowance(userAddress, CONFIG.contract.address);
+      if (allowance.lt(entryFee)) {
+        const txApprove = await token.approve(CONFIG.contract.address, entryFee);
+        await txApprove.wait();
+      }
+
+      const joined = await contract.hasActiveTicket(userAddress);
+      if (joined) {
+        if (confirm("⚠️ You already have a ticket. Reset it manually via contract if needed.")) {
+          return;
+        } else {
+          alert("Cannot proceed until your ticket is reset.");
+          return;
+        }
+      }
+
+      const tx = await contract.startGame();
+      await tx.wait();
+
+      alert(`✅ ${feeHuman} QUIZ deducted! Starting quiz...`);
+      btn.textContent = "✅ COMPLETED";
+      setTimeout(() => window.location.href = "/gamepage.html", 1500);
+
+    } catch (err) {
+      console.error(err);
+      const msg = err?.data?.message || err.reason || err.message || "Unknown error";
+      alert("❌ Transaction failed: " + msg);
+      btn.textContent = "I AGREE";
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const savedWallet = localStorage.getItem("wallet");
+    if (savedWallet) userAddress = savedWallet;
+    updateWalletUI();
+
+    document.getElementById("connectWalletBtn").addEventListener("click", connectWallet);
+    document.getElementById("disconnectBtn").addEventListener("click", disconnectWallet);
+    document.getElementById("agreeBtn").addEventListener("click", handleAgree);
+    document.getElementById("disagreeBtn")?.addEventListener("click", () => window.location.href="/");
+  });
+</script>
+</body>
+</html>

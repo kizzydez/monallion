@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz Game - MONALIONAIRE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+        /* ------------------------ RESET & BASE ------------------------ */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; height: 100%; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif;
+            color: #FBFAF9;
+            background:
+                radial-gradient(1200px 600px at 20% -10%, #3b0b7a50 0%, transparent 60%),
+                radial-gradient(1200px 600px at 120% 110%, #1f0e9050 0%, transparent 60%),
+                linear-gradient(135deg, #0E100F 0%, #0E100F 35%, #1a1a2e 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        a { color: inherit; text-decoration: none; }
+        button { font-family: inherit; }
+
+        /* ------------------------ HEADER ------------------------ */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 0; position: sticky; top: 0; z-index: 50;
+            background: linear-gradient(180deg, rgba(14,16,15,.75), rgba(14,16,15,0));
+            backdrop-filter: blur(6px);
+            border-bottom: 1px solid rgba(183,95,255,.25);
+            box-shadow: 0 6px 30px rgba(183,95,255,.15);
+        }
+        .logo {
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 2px; font-weight: 900; font-size: 24px;
+            color: #b75fff;
+            text-shadow: 0 0 12px rgba(183,95,255,.6), 0 0 28px rgba(183,95,255,.35);
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+
+        /* Wallet dropdown - Fixed to match home.html style */
+        .wallet-container { 
+            position: relative; 
+            margin-right: 20px; /* Added margin to match home.html */
+        }
+        .connect-wallet-btn {
+            background:linear-gradient(45deg,#b75fff,#52b7ff);
+            color:#0E100F; border:2px solid rgba(183,95,255,.5);
+            padding:12px 24px; border-radius:50px; font-weight:600;
+            cursor:pointer; transition:all .3s ease;
+            box-shadow:0 4px 15px rgba(183,95,255,.4),0 0 20px rgba(183,95,255,.2);
+        }
+        .connect-wallet-btn:hover {
+            transform:translateY(-2px);
+            box-shadow:0 8px 25px rgba(183,95,255,.6),0 0 30px rgba(183,95,255,.4);
+            border-color:rgba(183,95,255,.8);
+        }
+
+        .dropdown {
+            display:none; position:absolute; right:0; margin-top:10px;
+            background:#1a1a2e; border:1px solid rgba(183,95,255,.4);
+            border-radius:10px; overflow:hidden; z-index:10;
+            width: 180px;
+        }
+        .wallet-container.active .dropdown { display:block; }
+        .dropdown a, .dropdown button {
+            display:block; padding:10px 20px; color:#FBFAF9;
+            background:none; border:none; cursor:pointer;
+            text-align:left; text-decoration:none;
+            width: 100%;
+        }
+        .dropdown a:hover, .dropdown button:hover { background:rgba(183,95,255,.2); }
+
+           /* RESET & BASE */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; height: 100%; }
+        body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif; color: #FBFAF9; background: radial-gradient(1200px 600px at 20% -10%, #3b0b7a50 0%, transparent 60%), radial-gradient(1200px 600px at 120% 110%, #1f0e9050 0%, transparent 60%), linear-gradient(135deg, #0E100F 0%, #0E100F 35%, #1a1a2e 100%); min-height: 100vh; overflow-x: hidden; }
+        a { color: inherit; text-decoration: none; }
+        button { font-family: inherit; }
+
+        /* ------------------------ GAME LAYOUT ------------------------ */
+        .game-container {
+            margin: 22px auto 40px;
+            display: grid; grid-template-columns: 1.2fr .8fr; gap: 22px;
+        }
+        @media (max-width: 980px) { .game-container { grid-template-columns: 1fr; } }
+
+        .game-area {
+            background: linear-gradient(180deg, rgba(28,18,58,.7), rgba(20,12,38,.75));
+            border: 1px solid rgba(183,95,255,.22);
+            border-radius: 22px; padding: 18px;
+            box-shadow: inset 0 0 60px rgba(183,95,255,.15), 0 20px 60px rgba(183,95,255,.3);
+        }
+
+        .player-section {
+            display: flex; align-items: center; gap: 14px; padding: 10px 6px 16px;
+            border-bottom: 1px dashed rgba(183,95,255,.25);
+        }
+        .player-avatar {
+            width: 56px; height: 56px; border-radius: 50%;
+            background: radial-gradient(80% 80% at 30% 20%, #b75fff, #4c1d95 70%);
+            border: 2px solid rgba(183,95,255,.5);
+            box-shadow: 0 8px 30px rgba(183,95,255,.4), inset 0 0 24px rgba(255,255,255,.08);
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+        @keyframes pulseGlow {
+            0%,100% { box-shadow: 0 8px 30px rgba(183,95,255,.35), inset 0 0 18px rgba(255,255,255,.06); }
+            50% { box-shadow: 0 10px 38px rgba(183,95,255,.55), inset 0 0 26px rgba(255,255,255,.10); }
+        }
+        .player-info h3 { margin: 0; font-weight: 900; letter-spacing: .4px; }
+        .player-info p { opacity: .8; margin: 2px 0 0; }
+
+        .timer-section { display: grid; place-items: center; padding: 16px 0; }
+        .timer {
+            width: 88px; height: 88px; border-radius: 50%;
+            display: grid; place-items: center; font-weight: 900; font-size: 28px; font-family: 'Orbitron', monospace;
+            background:
+                radial-gradient(80% 80% at 30% 20%, rgba(183,95,255,.35), rgba(76,29,149,.25)),
+                conic-gradient(from 0deg, #b75fff 0%, #52b7ff 40%, #df6ab6 60%, #fb938f 100%);
+            color: #0E100F;
+            border: 3px solid rgba(183,95,255,.48);
+            box-shadow: 0 16px 45px rgba(183,95,255,.35), inset 0 0 30px rgba(255,255,255,.05);
+            animation: spinBorder 14s linear infinite;
+        }
+        .timer-label { margin-top: 6px; font-size: 12px; opacity: .75; letter-spacing: .5px; }
+        @keyframes spinBorder { 0% { filter: hue-rotate(0deg) } 100% { filter: hue-rotate(360deg) } }
+
+        .question-section { padding: 16px 10px 6px; }
+        .question-number {
+            font-family: 'Orbitron', monospace; color: #b75fff; opacity: .9; margin-bottom: 6px; letter-spacing: .5px;
+        }
+        .question-text {
+            font-size: 22px; /* Medium size for better readability */
+            font-weight: 600; line-height: 1.4; padding: 16px; border-radius: 16px;
+            background: linear-gradient(180deg, rgba(18,10,40,.35), rgba(18,10,40,.15));
+            border: 1px solid rgba(183,95,255,.2);
+            box-shadow: inset 0 0 24px rgba(183,95,255,.18);
+            text-shadow: 0 0 16px rgba(183,95,255,.15);
+        }
+
+        .answers-grid {
+            margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            pointer-events: auto;
+        }
+        @media (max-width: 640px) { .answers-grid { grid-template-columns: 1fr; } }
+
+        .answer-option {
+            display: grid; grid-template-columns: 54px 1fr; align-items: center; gap: 12px;
+            padding: 12px 14px; border-radius: 16px; cursor: pointer;
+            background: linear-gradient(180deg, rgba(25,14,52,.6), rgba(18,10,40,.5));
+            border: 1px solid rgba(183,95,255,.22);
+            box-shadow: 0 10px 26px rgba(183,95,255,.22), inset 0 0 20px rgba(255,255,255,.04);
+            transition: transform .08s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, filter .18s ease;
+            user-select: none;
+        }
+        .answer-option:hover {
+            transform: translateY(-1px);
+            border-color: rgba(183,95,255,.45);
+            box-shadow: 0 16px 34px rgba(183,95,255,.28);
+        }
+        .answer-option:active { transform: translateY(0); filter: brightness(1.02); }
+        .answer-letter {
+            height: 40px; width: 40px; border-radius: 50%; display: grid; place-items: center;
+            font-weight: 900; font-family: 'Orbitron', monospace;
+            background: radial-gradient(80% 80% at 28% 22%, #b75fff, #52b7ff 70%);
+            border: 2px solid rgba(183,95,255,.65);
+            box-shadow: 0 8px 26px rgba(183,95,255,.35), inset 0 0 18px rgba(255,255,255,.06);
+            color: #0E100F;
+        }
+        .answer-option.selected {
+            background: linear-gradient(180deg, rgba(255, 186, 95, 0.8), rgba(255, 191, 95, 0.7));
+            border-color: rgba(255, 180, 95, 0.8);
+            box-shadow: 0 18px 40px rgba(255, 183, 95, 0.45), inset 0 0 26px rgba(255,255,255,.08);
+        }
+        .answer-option.correct {
+            background: linear-gradient(180deg, rgba(1, 160, 57, 0.85), rgba(1, 131, 42, 0.75));
+            border-color: rgba(0, 0, 0, 0.9);
+            box-shadow: 0 18px 46px rgba(127, 251, 123, 0.45);
+            animation: correctPulse .9s ease 2;
+        }
+        @keyframes correctPulse {
+            0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); }
+        }
+        .answer-option.incorrect {
+            background: linear-gradient(180deg, rgba(170, 7, 2, 0.327), rgba(206, 7, 0, 0.804));
+            border-color: rgba(251,147,143,.85);
+            box-shadow: 0 16px 40px rgba(248, 150, 146, 0.4);
+            animation: shake .35s ease-in-out 2;
+        }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+        .answer-option.disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* ------------------------ PRIZE LADDER & LIFELINES ------------------------ */
+        .prize-ladder {
+            background: linear-gradient(180deg, rgba(22,14,44,.7), rgba(16,10,34,.75));
+            border: 1px solid rgba(183,95,255,.22);
+            border-radius: 22px; padding: 16px;
+            box-shadow: inset 0 0 60px rgba(183,95,255,.13), 0 20px 60px rgba(183,95,255,.25);
+            display: grid; grid-template-rows: auto auto 1fr; gap: 10px;
+            min-height: 520px;
+        }
+
+        .lifelines {
+            display: grid; grid-auto-flow: column; gap: 10px; justify-content: start;
+        }
+        .lifeline {
+            display: inline-grid; place-items: center;
+            width: 44px; height: 44px; border-radius: 12px; cursor: pointer; user-select: none;
+            font-size: 20px;
+            background: linear-gradient(180deg, rgba(183,95,255,.9), rgba(183,95,255,.85));
+            border: 1px solid rgba(183,95,255,.35);
+            box-shadow: 0 10px 26px rgba(183,95,255,.22), inset 0 0 18px rgba(255,255,255,.05);
+            transition: transform .12s ease, box-shadow .18s ease, border-color .18s ease, filter .18s ease;
+            position: relative; overflow: hidden;
+            color: #0E100F;
+        }
+        .lifeline::after {
+            content: ""; position: absolute; inset: -60% -40% auto -40%;
+            height: 120%; transform: rotate(35deg);
+            background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+            animation: sweep 3.2s ease-in-out infinite;
+        }
+        @keyframes sweep { 0% { left:-60% } 50% { left: 120% } 100% { left: 120% } }
+        .lifeline:hover { transform: translateY(-2px) scale(1.03); border-color: rgba(183,95,255,.7); }
+        .lifeline.used { filter: grayscale(.9) opacity(.6); pointer-events: none; }
+
+        .ladder-title {
+            text-align: center; font-family: 'Orbitron', monospace; font-weight: 900; letter-spacing: .8px;
+            color: #b75fff; text-shadow: 0 0 16px rgba(183,95,255,.35);
+            padding-top: 2px;
+        }
+
+        #prizeLadder { display: grid; gap: 6px; align-content: start; padding: 4px 0 2px; }
+        .prize-item {
+            display: grid; grid-template-columns: 36px 1fr; gap: 10px; align-items: center;
+            padding: 8px 12px; border-radius: 12px;
+            background: linear-gradient(180deg, rgba(25,14,52,.5), rgba(18,10,40,.45));
+            border: 1px solid rgba(183,95,255,.2);
+            transition: background .18s ease, border-color .18s ease, transform .12s ease;
+        }
+        .prize-item .prize-number { font-family: 'Orbitron', monospace; opacity: .8; }
+        .prize-item .prize-amount { text-align: right; font-weight: 800; letter-spacing: .5px; }
+        .prize-item.safe {
+            border-color: rgba(251,216,106,.6);
+            box-shadow: inset 0 0 22px rgba(251,216,106,.08);
+            background: linear-gradient(180deg, rgba(30,18,62,.7), rgba(25,14,52,.6));
+        }
+        .prize-item.current {
+            background: linear-gradient(180deg, rgba(183,95,255,.78), rgba(183,95,255,.7));
+            border-color: rgba(183,95,255,.8);
+            box-shadow: 0 12px 28px rgba(183,95,255,.35);
+            transform: scale(1.01);
+        }
+        .prize-item.won {
+            background: linear-gradient(180deg, rgba(82,183,255,.7), rgba(82,183,255,.6));
+            border-color: rgba(82,183,255,.6);
+        }
+
+        /* ------------------------ MODALS ------------------------ */
+        .modal-overlay {
+            position: fixed; inset: 0; display: none; place-items: center;
+            background: radial-gradient(60% 60% at 50% 50%, rgba(14,16,15,.45), rgba(14,16,15,.85));
+            backdrop-filter: blur(6px); z-index: 100;
+        }
+        .modal-overlay.active { display: grid; }
+        .game-modal {
+            width: min(92vw, 520px);
+            background: linear-gradient(180deg, #1b1238, #120a24);
+            border: 1px solid rgba(183,95,255,.35);
+            box-shadow: 0 20px 70px rgba(183,95,255,.35);
+            border-radius: 18px; padding: 20px 18px 22px;
+            text-align: center;
+            animation: modalPop .32s ease;
+        }
+        @keyframes modalPop {
+            from { transform: translateY(12px) scale(.98); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .modal-title { font-family: 'Orbitron', monospace; margin: 0 0 6px; color: #b75fff; }
+        .modal-message { opacity: .85; margin: 2px 0 10px; }
+        .modal-prize {
+            font-family: 'Orbitron', monospace; font-size: 40px; font-weight: 900; color: #b75fff;
+            text-shadow: 0 0 22px rgba(183,95,255,.55); margin-bottom: 14px;
+        }
+        .modal-buttons { display: grid; grid-auto-flow: row; gap: 10px; }
+        .modal-btn {
+            border: 0; border-radius: 12px; padding: 12px 16px; cursor: pointer; font-weight: 800;
+            color: #0E100F;
+            background: linear-gradient(180deg, #b75fff, #52b7ff);
+            transition: transform .12s ease, box-shadow .18s ease, filter .15s ease;
+        }
+        .modal-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(183,95,255,.35); }
+        .modal-btn:active { transform: translateY(0); filter: brightness(.98); }
+
+        /* Audience poll chart */
+        .chart-container {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+            align-items: end; min-height: 180px; margin: 14px 8px 12px;
+            background: linear-gradient(180deg, rgba(24,16,52,.45), rgba(14,8,30,.35));
+            border: 1px dashed rgba(183,95,255,.22);
+            border-radius: 12px; padding: 12px 10px 10px;
+        }
+        .chart-bar { display: grid; grid-template-rows: 1fr auto; align-items: end; gap: 6px; text-align: center; }
+        .bar {
+            width: 100%; height: 0%;
+            background: linear-gradient(180deg, #b75fff, #52b7ff);
+            border-radius: 8px 8px 2px 2px;
+            box-shadow: 0 10px 26px rgba(183,95,255,.4);
+            transition: height 600ms cubic-bezier(.2,.8,.2,1), filter .18s ease;
+        }
+        .chart-bar span { font-family: 'Orbitron', monospace; opacity: .85; }
+
+        /* Loading spinner for withdrawal */
+        .withdrawal-loading {
+            display: none;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #b75fff;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ------------------------ UTIL ------------------------ */
+        ::selection { background: rgba(183,95,255,.35); color: #fff; }
+
+        /* Color palette display */
+        .color-palette {
+            display: flex;
+            justify-content: center;
+            margin-top: 50px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .color-box {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 2px rgba(0, 0, 0, 0.7);
+        }
+  </style>
+</head>
+<body>
+  <!-- Prep Countdown Modal -->
+  <div class="modal-overlay active" id="prepModal">
+    <div class="game-modal">
+      <h2 class="modal-title">⏳ Get Ready!</h2>
+      <p class="modal-message">The quiz will start in...</p>
+      <div class="modal-prize" id="prepCountdown">6</div>
+    </div>
+  </div>
+
+  <!-- Audience Poll Modal -->
+  <div class="modal-overlay" id="audienceModal">
+    <div class="game-modal">
+      <h2 class="modal-title">👥 Audience Poll</h2>
+      <div class="chart-container">
+        <div class="chart-bar"><div class="bar" id="barA"></div><span>A</span></div>
+        <div class="chart-bar"><div class="bar" id="barB"></div><span>B</span></div>
+        <div class="chart-bar"><div class="bar" id="barC"></div><span>C</span></div>
+        <div class="chart-bar"><div class="bar" id="barD"></div><span>D</span></div>
+      </div>
+      <button class="modal-btn" onclick="closeAudiencePoll()">OK</button>
+    </div>
+  </div>
+
+  <!-- Game Over Modal -->
+  <div class="modal-overlay" id="gameModal">
+    <div class="game-modal">
+      <h2 class="modal-title" id="modalTitle">Game Over!</h2>
+      <p class="modal-message" id="modalMessage">Better luck next time!</p>
+      <div class="modal-prize" id="modalPrize">0 OGMN</div>
+      <div class="withdrawal-loading" id="withdrawalLoading">
+        <div class="spinner"></div>
+        <p>Processing withdrawal...</p>
+      </div>
+      <div class="modal-buttons" id="modalButtons"></div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">MONALLION</div>
+      <div class="wallet-container" id="walletContainer">
+        <button class="connect-wallet-btn" id="connectWalletBtn"> Connect Wallet</button>
+        <div class="dropdown" id="walletDropdown">
+          <a href="/home.html"> Home</a>
+          <a href="/profile.html"> Profile</a>
+          <a href="/leaderboard.html"> Leaderboard</a>
+          <a href="/faucet.html"> Faucet</a>
+          <button id="disconnectBtn"> Disconnect</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Game Layout -->
+    <div class="game-container">
+      <div class="game-area">
+        <div class="player-section">
+          <div class="player-avatar bronze" id="playerAvatar"></div>
+          <div class="player-info">
+            <h3 id="playerName">Player</h3>
+            <p>Current Question: <span id="currentQuestionDisplay">1</span> of 15</p>
+          </div>
+        </div>
+
+        <div class="timer-section">
+          <div class="timer" id="timer">13</div>
+          <div class="timer-label">Seconds Remaining</div>
+        </div>
+
+        <div class="question-section">
+          <div class="question-number" id="questionNumber">Question 1</div>
+          <div class="question-text" id="questionText">Loading...</div>
+          <div class="answers-grid" id="answersGrid"></div>
+        </div>
+      </div>
+
+      <!-- Lifelines + Prize Ladder -->
+      <div class="prize-ladder">
+        <div class="lifelines">
+          <div class="lifeline" id="fiftyLifeline" onclick="useLifeline('fifty')" title="50/50">⚖️</div>
+          <div class="lifeline" id="phoneLifeline" onclick="useLifeline('phone')" title="Phone a Friend">📞</div>
+          <div class="lifeline" id="audienceLifeline" onclick="useLifeline('audience')" title="Ask the Audience">👥</div>
+        </div>
+        <div class="ladder-title">💰 PRIZE LADDER</div>
+        <div id="prizeLadder"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ------------------------ CONFIG & STATE ------------------------
+    const API_BASE = "https://monallion-production.up.railway.app";
+    let questions = [], currentQuestion = 0, selectedAnswer = -1, timerInterval, timeLeft = 13, gameActive = false;
+    const prizes = [100,200,300,500,1000,2000,4000,8000,16000,32000,64000,125000,250000,500000,1000000];
+    const safeHavens = [4,9];
+    let provider, signer, userAddress;
+    let usedLifelines = { fifty:false, phone:false, audience:false };
+    const CONTRACT_ADDRESS = "0xc461CdF35f2A17f5c9a777fa11C554583127712c"; 
+    const ABI = ["function claim() external"];
+
+    // ------------------------ UTILS ------------------------
+    function playSound(id){ console.log("Playing sound:", id); }
+    async function ensureWallet(){
+      userAddress = localStorage.getItem("wallet");
+      if(!userAddress){ alert("❌ Wallet not connected."); window.location.href="/home.html"; }
+    }
+    function goHome(){ window.location.href="/home.html"; }
+
+    // ------------------------ WALLET ------------------------
+    async function connectWallet(){
+      if(!window.ethereum){ alert("Install MetaMask or OKX Wallet!"); return; }
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      userAddress = await signer.getAddress();
+      localStorage.setItem("wallet", userAddress);
+      updateWalletUI();
+    }
+    function disconnectWallet(){
+      localStorage.removeItem("wallet");
+      userAddress = null;
+      updateWalletUI();
+      goHome();
+    }
+    function updateWalletUI(){
+      const btn = document.getElementById("connectWalletBtn");
+      const walletContainer = document.getElementById("walletContainer");
+      if(userAddress){
+        const truncated = `${userAddress.substring(0,6)}...${userAddress.slice(-4)}`;
+        btn.textContent = `✅ ${truncated}`;
+        btn.onclick = () => walletContainer.classList.toggle("active");
+      } else { btn.textContent = "🔌 Connect Wallet"; btn.onclick = connectWallet; }
+    }
+
+    // ------------------------ GAME LOGIC ------------------------
+    async function initGame(){
+      await ensureWallet();
+      try{
+        const resp = await fetch(`${API_BASE}/api/questions/random?count=15`);
+        const data = await resp.json();
+        questions = data.questions || generateMockQuestions(15);
+        generatePrizeLadder();
+        startPreparationCountdown();
+      }catch(err){ console.error(err); }
+    }
+
+    function startPreparationCountdown(){
+      playSound("soundDrumroll");
+      let count = 6;
+      const prep = document.getElementById("prepCountdown");
+      const modal = document.getElementById("prepModal");
+      prep.textContent = count;
+      const interval = setInterval(()=>{
+        count--; prep.textContent=count;
+        if(count<=0){ clearInterval(interval); modal.classList.remove("active"); gameActive=true; loadQuestion(); startTimer(); }
+      },1000);
+    }
+
+    function generatePrizeLadder(){
+      const ladder = document.getElementById("prizeLadder");
+      ladder.innerHTML="";
+      for(let i=prizes.length-1;i>=0;i--){
+        const div=document.createElement("div");
+        div.className="prize-item";
+        if(i===currentQuestion) div.classList.add("current");
+        if(safeHavens.includes(i)) div.classList.add("safe");
+        if(i<currentQuestion) div.classList.add("won");
+        div.innerHTML=`<span class="prize-number">${i+1}</span><span class="prize-amount">${prizes[i]} OGMN</span>`;
+        ladder.appendChild(div);
+      }
+    }
+
+    function loadQuestion(){
+      if(currentQuestion>=questions.length){ endGame(true,prizes[currentQuestion-1]); return; }
+      const q=questions[currentQuestion];
+      document.getElementById("questionNumber").textContent=`Question ${currentQuestion+1}`;
+      document.getElementById("questionText").textContent=q.question;
+      document.getElementById("currentQuestionDisplay").textContent=currentQuestion+1;
+      const grid=document.getElementById("answersGrid");
+      grid.innerHTML="";
+      q.answers.forEach((ans,i)=>{
+        const opt=document.createElement("div");
+        opt.className="answer-option";
+        opt.onclick=()=>selectAnswer(i);
+        opt.innerHTML=`<span class="answer-letter">${"ABCD"[i]}</span><span>${ans.text}</span>`;
+        grid.appendChild(opt);
+      });
+      selectedAnswer=-1;
+    }
+
+    function startTimer(){
+      clearInterval(timerInterval);
+      timeLeft=13;
+      document.getElementById("timer").textContent=timeLeft;
+      timerInterval=setInterval(()=>{
+        timeLeft--;
+        document.getElementById("timer").textContent=timeLeft;
+        if(timeLeft<=0){ clearInterval(timerInterval); checkAnswer(-1,true); }
+      },1000);
+    }
+
+    function selectAnswer(i){
+      if(!gameActive) return;
+      selectedAnswer=i;
+      document.querySelectorAll(".answer-option").forEach(opt=>opt.classList.remove("selected"));
+      document.querySelectorAll(".answer-option")[i].classList.add("selected");
+      document.querySelectorAll(".answer-option").forEach(opt=>opt.style.pointerEvents="none");
+      setTimeout(()=>checkAnswer(i,false),1000);
+    }
+
+    function checkAnswer(selectedIndex,isTimeout=false){
+      if(!gameActive) return;
+      clearInterval(timerInterval);
+      gameActive=false;
+      const q=questions[currentQuestion];
+      const opts=document.querySelectorAll(".answer-option");
+      const correctIndex=["A","B","C","D"].indexOf(q.correct);
+      if(correctIndex!=-1 && opts[correctIndex]) opts[correctIndex].classList.add("correct");
+
+      if(isTimeout){ playSound("soundWrong"); setTimeout(()=>{ let winnings=0; if(currentQuestion>safeHavens[1]) winnings=prizes[safeHavens[1]]; else if(currentQuestion>safeHavens[0]) winnings=prizes[safeHavens[0]]; endGame(false,winnings); },2000); return; }
+      if(selectedIndex!==correctIndex && opts[selectedIndex]){ opts[selectedIndex].classList.add("incorrect"); playSound("soundWrong"); }
+      else if(selectedIndex===correctIndex){ playSound("soundCorrect"); }
+
+      setTimeout(()=>{
+        if(selectedIndex===correctIndex){ currentQuestion++; if(currentQuestion>=questions.length) endGame(true,prizes[currentQuestion-1]); else { gameActive=true; generatePrizeLadder(); loadQuestion(); startTimer(); } }
+        else { let winnings=0; if(currentQuestion>safeHavens[1]) winnings=prizes[safeHavens[1]]; else if(currentQuestion>safeHavens[0]) winnings=prizes[safeHavens[0]]; endGame(false,winnings); }
+      },2000);
+    }
+
+    async function endGame(won,winnings){
+      document.getElementById("modalPrize").textContent=winnings+" OGMN";
+      document.getElementById("modalTitle").textContent=won?"Congratulations!":"Game Over!";
+      document.getElementById("modalMessage").textContent=won?"You've won the game!":"Better luck next time!";
+      let btns="";
+      if(winnings>0) btns+=`<button class="modal-btn" onclick="withdrawWinnings(${winnings})">💰 Withdraw</button>`;
+      btns+=`<button class="modal-btn" onclick="restartWithPayment()">Try Again</button>`;
+      btns+=`<button class="modal-btn" onclick="goHome()">Main Menu</button>`;
+      document.getElementById("modalButtons").innerHTML=btns;
+      document.getElementById("gameModal").classList.add("active");
+
+      // Send to backend leaderboard/profile
+      fetch(`${API_BASE}/api/game/complete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet:userAddress,payout:winnings}) }).catch(console.error);
+    }
+
+    async function withdrawWinnings(amount){
+      const loading=document.getElementById("withdrawalLoading");
+      loading.style.display="block";
+      try{
+        if(!window.ethereum){ alert("❌ No wallet detected."); return; }
+        const provider=new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts",[]);
+        const signer=provider.getSigner();
+        const contract=new ethers.Contract(CONTRACT_ADDRESS,ABI,signer);
+        const tx=await contract.claim();
+        await tx.wait();
+        alert(`✅ Claim successful! Rewards sent to ${await signer.getAddress()}`);
+      }catch(err){ console.error(err); alert("❌ Claim failed: "+(err.reason||err.message)); }
+      finally{ loading.style.display="none"; }
+    }
+
+    async function restartWithPayment(){
+      try{
+        const resp=await fetch(`${API_BASE}/api/game/pay`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({wallet:userAddress})});
+        const data=await resp.json();
+        if(!data.success){ alert("❌ "+data.error); window.location.href="/home.html"; return; }
+        await window.ethereum.request({method:'eth_requestAccounts'});
+        const txHash=await window.ethereum.request({method:'eth_sendTransaction',params:[data.transaction]});
+        const provider=new ethers.providers.Web3Provider(window.ethereum);
+        const receipt=await provider.waitForTransaction(txHash);
+        if(receipt.status===1) window.location.reload();
+        else throw new Error("Transaction failed on chain");
+      }catch(err){ console.error(err); alert("❌ Payment failed: "+(err.message||"Unknown error")); }
+    }
+
+    function closeAudiencePoll(){ document.getElementById("audienceModal").classList.remove("active"); }
+
+    // ------------------------ INIT ------------------------
+    document.addEventListener("DOMContentLoaded",()=>{
+      const wallet=localStorage.getItem("wallet");
+      if(wallet) userAddress=wallet;
+      updateWalletUI();
+      document.getElementById("connectWalletBtn").addEventListener("click", e=>{ e.stopPropagation(); if(!userAddress) connectWallet(); else document.getElementById("walletContainer").classList.toggle("active"); });
+      document.getElementById("disconnectBtn").addEventListener("click",disconnectWallet);
+      document.addEventListener("click", e=>{ const walletContainer=document.getElementById("walletContainer"); if(!walletContainer.contains(e.target)) walletContainer.classList.remove("active"); });
+      initGame();
+    });
+
+    // ------------------------ MOCK QUESTIONS FALLBACK ------------------------
+    function generateMockQuestions(count){
+      return Array.from({length:count},(_,i)=>({
+        question:`Sample Question ${i+1}?`,
+        answers:[
+          {text:"Option A"},{text:"Option B"},{text:"Option C"},{text:"Option D"}
+        ],
+        correct:["A","B","C","D"][Math.floor(Math.random()*4)]
+      }));
+    }
+  </script>
+</body>
+</html>
