@@ -164,7 +164,7 @@ const PRIVATE_KEY = process.env.FAUCET_PRIVATE_KEY || "0xYOUR_TEST_PRIVATE_KEY";
 const RPC_URL = process.env.RPC_URL || 'https://monad-testnet.drpc.org';
 const FAUCET_CONTRACT_ADDRESS = process.env.FAUCET_CONTRACT_ADDRESS || '0x62329a958a1d7cdede57C31E89f99E4Fa55F2834';
 const TOKEN_ADDRESS = process.env.TOKEN_ADDRESS || "0x158cd43423D886384e959DD5f239111F9D02852C";
-const GAME_CONTRACT_ADDRESS = process.env.GAME_CONTRACT || "0x8039e4812Abb07709595b9Ef2e523D542BeC390c";
+const GAME_CONTRACT_ADDRESS = process.env.GAME_CONTRACT || "0x7d64aF760d2c63256DAd09104117B1665B259E34";
 
 // Token Contract ABI (simplified for transfer function)
 // Example ERC20 ABI (basic)
@@ -698,3 +698,4 @@ const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
