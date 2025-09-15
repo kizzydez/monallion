@@ -13,7 +13,7 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'gravillionaire-backend'
+      - 'monallion'
       - '--image=gcr.io/$PROJECT_ID/monallion:latest'
       - '--platform=managed'
       - '--region=us-central1'
