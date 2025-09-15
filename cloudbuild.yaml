@@ -21,3 +21,7 @@ steps:
 
 images:
   - 'gcr.io/$PROJECT_ID/monallion:latest'
+
+  options:
+  logging: CLOUD_LOGGING_ONLY
+
