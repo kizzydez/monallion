@@ -141,6 +141,19 @@ app.use(cors({
   credentials: true
 }));
 
+const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+const Game = await ethers.getContractFactory("MillionaireQuizGameTreasury", wallet);
+const game = await Game.deploy(
+  process.env.TOKEN_ADDRESS,
+  wallet.address // owner
+);
+
+await game.waitForDeployment();
+console.log("Deployed at:", await game.getAddress());
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -713,6 +726,7 @@ const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
 
 
 
