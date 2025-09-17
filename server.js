@@ -1,6 +1,6 @@
 // server.js
 // ───────────────────────────────────────────────────────────────
-// Backend for Gravilionaire multipage frontend
+// Backend for Monallion multipage frontend
 // ───────────────────────────────────────────────────────────────
 
 import dotenv from "dotenv";
@@ -20,7 +20,7 @@ import { ethers } from "ethers";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const MONGO = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/gravilionaire";
+const MONGO = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/monallion";
 
 const allowedOrigins = [
   "https://test-monallion.netlify.app",   // your frontend
@@ -30,7 +30,6 @@ const allowedOrigins = [
 // ── DB Models ──────────────────────────────────────────────────
 mongoose.set("strictQuery", false);
 
-// MongoDB connection
 mongoose.connect(MONGO, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -40,22 +39,7 @@ mongoose.connect(MONGO, {
   console.error("❌ MongoDB connection error:", err.message);
 });
 
-async function connectDB() {
-  try {
-    await mongoose.connect(MONGO, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
-    console.log("✅ MongoDB connected");
-  } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
-    process.exit(1);
-  }
-}
-
-connectDB();
-
-
+// Schemas
 const QuestionSchema = new mongoose.Schema(
   {
     question: String,
@@ -127,10 +111,8 @@ async function upsertQuestion(q) {
 // ── App Middleware ─────────────────────────────────────────────
 const app = express();
 
-// Simplified CORS for localhost
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests with no origin (like curl, Postman)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
@@ -141,19 +123,6 @@ app.use(cors({
   credentials: true
 }));
 
-const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-
-const Game = await ethers.getContractFactory("MillionaireQuizGameTreasury", wallet);
-const game = await Game.deploy(
-  process.env.TOKEN_ADDRESS,
-  wallet.address // owner
-);
-
-await game.waitForDeployment();
-console.log("Deployed at:", await game.getAddress());
-
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -163,7 +132,7 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Rate limit faucet (1 claim / 4h per IP)
+// Rate limit faucet
 const faucetLimiter = rateLimit({
   windowMs: 4 * 60 * 60 * 1000,
   max: 1,
@@ -173,14 +142,13 @@ const faucetLimiter = rateLimit({
 });
 
 // ── Blockchain Configuration ──────────────────────────────────
-const PRIVATE_KEY = process.env.FAUCET_PRIVATE_KEY || "0xYOUR_TEST_PRIVATE_KEY";
-const RPC_URL = process.env.RPC_URL || 'https://monad-testnet.drpc.org';
-const FAUCET_CONTRACT_ADDRESS = process.env.FAUCET_CONTRACT_ADDRESS || '0x62329a958a1d7cdede57C31E89f99E4Fa55F2834';
+const RPC_URL = process.env.RPC_URL || "https://monad-testnet.drpc.org";
+const PRIVATE_KEY = process.env.PRIVATE_KEY || "0xYOUR_TEST_PRIVATE_KEY";
+const FAUCET_CONTRACT_ADDRESS = process.env.FAUCET_CONTRACT_ADDRESS || "0x62329a958a1d7cdede57C31E89f99E4Fa55F2834";
 const TOKEN_ADDRESS = process.env.TOKEN_ADDRESS || "0x158cd43423D886384e959DD5f239111F9D02852C";
 const GAME_CONTRACT_ADDRESS = process.env.GAME_CONTRACT || "0xD0aff0D9ed28938DC6639D86be4bE7DDC522B8F4";
 
-// Token Contract ABI (simplified for transfer function)
-// Example ERC20 ABI (basic)
+// ABIs
 const TOKEN_ABI = [
   "function approve(address spender,uint256 value) public returns(bool)",
   "function balanceOf(address owner) public view returns(uint256)",
@@ -188,7 +156,6 @@ const TOKEN_ABI = [
   "function allowance(address owner,address spender) public view returns(uint256)",
   "function decimals() public view returns(uint8)"
 ];
-
 
 const GAME_ABI = [
   // Gameplay
@@ -199,11 +166,9 @@ const GAME_ABI = [
   "function claimWinnings() external",
   "function hasActiveTicket(address player) view returns (bool)",
   "function contractBalance() external view returns (uint256)",
-
-  // Treasury (owner-only)
+  // Treasury
   "function payoutTo(address to, uint256 amount) external",
   "function emergencyWithdraw(address to, uint256 amount) external",
-
   // Events
   "event GameStarted(address indexed player)",
   "event QuestionAdvanced(address indexed player, uint8 question, uint256 reward)",
@@ -213,36 +178,29 @@ const GAME_ABI = [
   "event EmergencyWithdraw(address indexed to, uint256 amount)"
 ];
 
-
-// Faucet Contract ABI
 const FAUCET_ABI = [
   "function claim() external",
   "function getCooldown(address _user) external view returns (uint256)"
 ];
 
-// Set up provider and signer
-let provider, wallet, faucetContract, tokenContract;
-
+// Initialize ethers
+let provider, wallet, faucetContract, tokenContract, gameContract;
 try {
   provider = new ethers.JsonRpcProvider(RPC_URL);
   wallet = new ethers.Wallet(PRIVATE_KEY, provider);
   faucetContract = new ethers.Contract(FAUCET_CONTRACT_ADDRESS, FAUCET_ABI, wallet);
   tokenContract = new ethers.Contract(TOKEN_ADDRESS, TOKEN_ABI, wallet);
+  gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, wallet);
   console.log("✅ Ethers initialized successfully");
 } catch (e) {
   console.error("❌ Failed to initialize ethers:", e.message);
-  // Don't exit for localhost, just warn
 }
 
 // ── API Routes ────────────────────────────────────────────────
 app.get("/api/health", async (_req, res) => {
   try {
     const dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
-    res.json({ 
-      ok: true, 
-      db: dbStatus,
-      timestamp: new Date().toISOString()
-    });
+    res.json({ ok: true, db: dbStatus, timestamp: new Date().toISOString() });
   } catch (error) {
     res.status(500).json({ ok: false, error: "Health check failed" });
   }
@@ -715,19 +673,13 @@ app.use((req, res, next) => {
   res.sendFile(path.join(__dirname, "home.html"));
 });
 
-// Error handling middleware
+// Error handling
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  res.status(500).json({ error: "Something went wrong!" });
 });
 
 const PORT = process.env.PORT || 8081;
-
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
-
-
-
-
-
