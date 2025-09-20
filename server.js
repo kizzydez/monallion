@@ -157,24 +157,18 @@ const TOKEN_ABI = [
 ];
 
 const GAME_ABI = [
-  // Gameplay
   "function entryFee() view returns (uint256)",
   "function startGame() external",
-  "function advanceQuestion() external",
-  "function gameOver() external",
-  "function claimWinnings() external",
+  "function endGame() external",
+  "function tryAgain() external",
+  "function recordWinnings(address player, uint256 amount) external",
+  "function withdrawWinnings() external",
   "function hasActiveTicket(address player) view returns (bool)",
   "function contractBalance() external view returns (uint256)",
-  // Treasury
-  "function payoutTo(address to, uint256 amount) external",
-  "function emergencyWithdraw(address to, uint256 amount) external",
-  // Events
-  "event GameStarted(address indexed player)",
-  "event QuestionAdvanced(address indexed player, uint8 question, uint256 reward)",
-  "event GameOver(address indexed player, uint256 winnings)",
-  "event WinningsClaimed(address indexed player, uint256 amount)",
-  "event Payout(address indexed to, uint256 amount, uint256 timestamp)",
-  "event EmergencyWithdraw(address indexed to, uint256 amount)"
+  "event GameStarted(address indexed player, uint256 fee)",
+  "event GameOver(address indexed player, uint256 payout)",
+  "event WinningsRecorded(address indexed player, uint256 amount)",
+  "event WinningsWithdrawn(address indexed player, uint256 amount)"
 ];
 
 // Initialize ethers
@@ -212,21 +206,6 @@ app.get("/api/config", (_req, res) => {
   });
 });
 
-// Faucet claim endpoint
-app.post("/api/faucet/claim", faucetLimiter, async (req, res) => {
-  try {
-    // For localhost testing without blockchain
-    if (!PRIVATE_KEY || PRIVATE_KEY === "0xYOUR_TEST_PRIVATE_KEY") {
-      return res.json({
-        success: true,
-        txHash: "0x" + crypto.randomBytes(32).toString('hex'),
-        sent: {
-          amount: '100',
-          denom: 'QUIZ'
-        }
-      });
-    }
-
     const { address } = req.body;
     
     if (!address) {
@@ -236,66 +215,6 @@ app.post("/api/faucet/claim", faucetLimiter, async (req, res) => {
     if (!ethers.isAddress(address)) {
       return res.status(400).json({ error: "Invalid Ethereum address" });
     }
-
-    // Check cooldown
-    const cooldown = await faucetContract.getCooldown(address);
-    const cooldownSeconds = Number(cooldown);
-    
-    if (cooldownSeconds > 0) {
-      const hours = Math.floor(cooldownSeconds / 3600);
-      const minutes = Math.floor((cooldownSeconds % 3600) / 60);
-      return res.status(400).json({ 
-        error: `Cooldown active. Please wait ${hours}h ${minutes}m` 
-      });
-    }
-
-    // Execute the claim transaction
-    const tx = await faucetContract.claim({ gasLimit: 100000 });
-    const receipt = await tx.wait();
-
-    res.json({
-      success: true,
-      txHash: tx.hash,
-      sent: {
-        amount: '100',
-        denom: 'QUIZ'
-      }
-    });
-  } catch (error) {
-    console.error("Faucet claim error:", error);
-    
-    // For localhost, return a mock success response if blockchain fails
-    res.json({
-      success: true,
-      txHash: "0x" + crypto.randomBytes(32).toString('hex'),
-      sent: {
-        amount: '100',
-        denom: 'QUIZ'
-      }
-    });
-  }
-});
-
-// Faucet cooldown check endpoint
-app.get("/api/faucet/cooldown", async (req, res) => {
-  try {
-    const { address } = req.query;
-    
-    if (!address) {
-      return res.status(400).json({ error: "Address is required" });
-    }
-    
-    if (!ethers.isAddress(address)) {
-      return res.status(400).json({ error: "Invalid Ethereum address" });
-    }
-
-    // For localhost testing, return 0 cooldown
-    res.json({ cooldown: 0 });
-  } catch (error) {
-    console.error('Cooldown check error:', error);
-    res.json({ cooldown: 0 }); // Default to 0 for localhost
-  }
-});
 
 // Upload questions JSON
 app.post("/api/questions/upload", async (req, res) => {
@@ -517,8 +436,7 @@ app.get("/api/contract/balance", async (req, res) => {
 app.post("/api/withdraw", async (req, res) => {
   try {
     const { wallet, amount } = req.body;
-    
-    // Validate input
+
     if (!wallet || !amount) {
       return res.status(400).json({ error: "Wallet and amount required" });
     }
@@ -527,80 +445,37 @@ app.post("/api/withdraw", async (req, res) => {
       return res.status(400).json({ error: "Invalid wallet address" });
     }
 
-    // Check if user has enough winnings
+    // Check winnings stored in DB
     const player = await Leaderboard.findOne({ wallet: wallet.toLowerCase() });
     if (!player || player.winnings < amount) {
       return res.status(400).json({ error: "Insufficient winnings" });
     }
 
-    // For localhost testing without blockchain
-    if (!PRIVATE_KEY || PRIVATE_KEY === "0xYOUR_TEST_PRIVATE_KEY") {
-      // Simulate transaction
-      const txHash = "0x" + crypto.randomBytes(32).toString('hex');
-      
-      // Update player winnings (subtract withdrawn amount)
-      await Leaderboard.updateOne(
-        { wallet: wallet.toLowerCase() },
-        { $inc: { winnings: -amount } }
-      );
-
-      return res.json({ 
-        success: true, 
-        message: `${amount} QUIZ withdrawn successfully (simulated)`,
-        txHash: txHash
-      });
-    }
-
-    // PRODUCTION: Real blockchain transaction
-    // Get token decimals
-    const decimals = await tokenContract.decimals();
-    
-    // Convert amount to proper units
-    const amountInWei = ethers.parseUnits(amount.toString(), decimals);
-    
-    // Check game contract balance
-    const contractBalance = await tokenContract.balanceOf(GAME_CONTRACT_ADDRESS);
-    if (contractBalance < amountInWei) {
-      return res.status(400).json({ error: "Insufficient contract balance" });
-    }
-
-    // Execute the transfer
-    const tx = await tokenContract.transfer(wallet, amountInWei, {
-      gasLimit: 100000
-    });
-
-    // Wait for transaction confirmation
+    // Call contract: record winnings
+    const tx = await gameContract.recordWinnings(wallet, amount);
     const receipt = await tx.wait();
-    
+
     if (receipt.status === 1) {
-      // Update player winnings only after successful transaction
+      // Reduce DB balance only after blockchain success
       await Leaderboard.updateOne(
         { wallet: wallet.toLowerCase() },
         { $inc: { winnings: -amount } }
       );
 
-      res.json({ 
-        success: true, 
-        message: `${amount} QUIZ withdrawn successfully`,
+      res.json({
+        success: true,
+        message: `Winnings of ${amount} QUIZ recorded. Player can withdraw.`,
         txHash: tx.hash
       });
     } else {
       throw new Error("Transaction failed");
     }
-
   } catch (error) {
     console.error("Withdrawal error:", error);
-    
-    let errorMessage = "Withdrawal failed";
-    if (error.code === "INSUFFICIENT_FUNDS") {
-      errorMessage = "Insufficient gas fees";
-    } else if (error.code === "ACTION_REJECTED") {
-      errorMessage = "Transaction rejected by user";
-    }
-    
-    res.status(500).json({ error: errorMessage });
+    res.status(500).json({ error: error.message });
   }
 });
+
 
 // Admin endpoint to fund the game contract
 app.post("/api/admin/fund-contract", async (req, res) => {
@@ -613,7 +488,7 @@ app.post("/api/admin/fund-contract", async (req, res) => {
 
     // For local testing
     if (!PRIVATE_KEY || PRIVATE_KEY === "0xYOUR_TEST_PRIVATE_KEY") {
-      console.log(`Simulated: Contract funded with ${amount} OGMN tokens`);
+      console.log(`Simulated: Contract funded with ${amount} QUIZ tokens`);
       return res.json({ 
         success: true, 
         message: `Contract funded with ${amount} QUIZ tokens (simulated)`
@@ -676,4 +551,5 @@ const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
 
