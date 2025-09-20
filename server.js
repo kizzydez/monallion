@@ -91,6 +91,31 @@ function validateQuestion(q) {
   );
 }
 
+app.post("/api/game/start", async (req, res) => {
+  try {
+    const { wallet } = req.body;
+    if (!wallet || !ethers.isAddress(wallet)) {
+      return res.status(400).json({ error: "Valid wallet required" });
+    }
+
+    const tx = await gameContract.startGame({
+      from: wallet, // or connect signer wallet
+      gasLimit: 200000
+    });
+    const receipt = await tx.wait();
+
+    if (receipt.status === 1) {
+      res.json({ ok: true, txHash: tx.hash });
+    } else {
+      throw new Error("Game start transaction failed");
+    }
+  } catch (error) {
+    console.error("Start game error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 async function upsertQuestion(q) {
   const doc = {
     question: q.question.trim(),
@@ -561,6 +586,7 @@ const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
 
 
 
