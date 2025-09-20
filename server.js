@@ -206,15 +206,25 @@ app.get("/api/config", (_req, res) => {
   });
 });
 
+    app.post("/api/some-endpoint", async (req, res) => {
+  try {
     const { address } = req.body;
-    
+
     if (!address) {
       return res.status(400).json({ error: "Address is required" });
     }
-    
+
     if (!ethers.isAddress(address)) {
       return res.status(400).json({ error: "Invalid Ethereum address" });
     }
+
+    // your logic here
+    res.json({ ok: true, address });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 // Upload questions JSON
 app.post("/api/questions/upload", async (req, res) => {
@@ -551,6 +561,7 @@ const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
 
 
 
