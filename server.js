@@ -20,7 +20,7 @@ import { ethers } from "ethers";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const MONGO = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/monallion";
+const MONGO = process.env.MONGO_URI || "mongodb://IRE:Eedrees16041604@ac-abc123-shard-00-00.xdzjly6.mongodb.net:27017,ac-abc123-shard-00-01.xdzjly6.mongodb.net:27017,ac-abc123-shard-00-02.xdzjly6.mongodb.net:27017/gravilionaire?ssl=true&replicaSet=atlas-xyz-shard-0&authSource=admin&retryWrites=true&w=majority";
 
 const allowedOrigins = [
   "https://test-monallion.netlify.app",   // your frontend
@@ -144,9 +144,8 @@ const faucetLimiter = rateLimit({
 // ── Blockchain Configuration ──────────────────────────────────
 const RPC_URL = process.env.RPC_URL || "https://monad-testnet.drpc.org";
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "0xYOUR_TEST_PRIVATE_KEY";
-const FAUCET_CONTRACT_ADDRESS = process.env.FAUCET_CONTRACT_ADDRESS || "0x62329a958a1d7cdede57C31E89f99E4Fa55F2834";
-const TOKEN_ADDRESS = process.env.TOKEN_ADDRESS || "0x158cd43423D886384e959DD5f239111F9D02852C";
-const GAME_CONTRACT_ADDRESS = process.env.GAME_CONTRACT || "0xD0aff0D9ed28938DC6639D86be4bE7DDC522B8F4";
+const TOKEN_ADDRESS = process.env.TOKEN_ADDRESS || "0x02dF50F4D8f65CB24eaFa5496ef576955342f6D7";
+const GAME_CONTRACT_ADDRESS = process.env.GAME_CONTRACT || "0xDf666c5684c689b744FAB49287a4e6c809d6726A";
 
 // ABIs
 const TOKEN_ABI = [
@@ -178,17 +177,11 @@ const GAME_ABI = [
   "event EmergencyWithdraw(address indexed to, uint256 amount)"
 ];
 
-const FAUCET_ABI = [
-  "function claim() external",
-  "function getCooldown(address _user) external view returns (uint256)"
-];
-
 // Initialize ethers
 let provider, wallet, faucetContract, tokenContract, gameContract;
 try {
   provider = new ethers.JsonRpcProvider(RPC_URL);
   wallet = new ethers.Wallet(PRIVATE_KEY, provider);
-  faucetContract = new ethers.Contract(FAUCET_CONTRACT_ADDRESS, FAUCET_ABI, wallet);
   tokenContract = new ethers.Contract(TOKEN_ADDRESS, TOKEN_ABI, wallet);
   gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, wallet);
   console.log("✅ Ethers initialized successfully");
@@ -683,3 +676,4 @@ const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
