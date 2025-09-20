@@ -20,7 +20,7 @@ import { ethers } from "ethers";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const MONGO = process.env.MONGO_URI || "mongodb://IRE:Eedrees16041604@ac-abc123-shard-00-00.xdzjly6.mongodb.net:27017,ac-abc123-shard-00-01.xdzjly6.mongodb.net:27017,ac-abc123-shard-00-02.xdzjly6.mongodb.net:27017/gravilionaire?ssl=true&replicaSet=atlas-xyz-shard-0&authSource=admin&retryWrites=true&w=majority";
+const MONGO = process.env.MONGO_URI || "mongodb+srv://IRE:Eedrees16041604@ac-abc123.xdzjly6.mongodb.net/gravilionaire?retryWrites=true&w=majority";
 
 const allowedOrigins = [
   "https://test-monallion.netlify.app",   // your frontend
@@ -551,5 +551,6 @@ const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
 
 
