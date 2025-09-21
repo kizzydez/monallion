@@ -1,23 +1,23 @@
 # Use official Node.js LTS image
-FROM node:20-alpine AS base
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json first for caching
+# Set environment variables
+ENV NODE_ENV=production
+
+# Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
-# Install dependencies (only production dependencies)
-RUN npm ci --omit=dev
+# Install dependencies (production only)
+RUN npm ci --omit=dev || npm install --omit=dev
 
 # Copy application source code
 COPY . .
 
-# Expose the port (from .env or default 8081)
-EXPOSE 8081
-
-# Set NODE_ENV to production
-ENV NODE_ENV=production
+# Expose the port (Cloud Run expects 8080)
+EXPOSE 8080
 
 # Start the application
 CMD ["node", "server.js"]
