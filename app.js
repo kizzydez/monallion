@@ -1,6 +1,11 @@
-// app.js (ethers v5)
+// app.js (ethers v5 + Monad Testnet auto-switch)
 
-// Connect wallet
+// Load env values (injected via build or inline <script> with data-env)
+const MONAD_CHAIN_ID_HEX = "0x40d8"; // from .env (CHAIN_ID_HEX)
+const MONAD_RPC_URL = "https://monad-testnet.drpc.org"; // from .env
+const MONAD_CHAIN_NAME = "Monad Testnet"; // human-readable
+
+// Connect wallet + ensure Monad Testnet
 async function connectWallet() {
   if (!window.ethereum) {
     alert("Please install MetaMask or OKX Wallet!");
@@ -8,7 +13,13 @@ async function connectWallet() {
   }
   try {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
+
+    // Ask for wallet access
     await provider.send("eth_requestAccounts", []);
+
+    // Ensure correct network
+    await switchToMonad();
+
     const signer = provider.getSigner();
     const address = await signer.getAddress();
 
@@ -18,18 +29,54 @@ async function connectWallet() {
     updateWalletUI(address);
   } catch (err) {
     console.error("❌ Wallet connection failed:", err);
-    alert("Wallet connection failed: " + err.message);
+    alert("Wallet connection failed: " + (err.message || err));
+  }
+}
+
+// Switch user to Monad Testnet
+async function switchToMonad() {
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: MONAD_CHAIN_ID_HEX }],
+    });
+    console.log("✅ Switched to Monad Testnet");
+  } catch (switchError) {
+    // If chain not added to wallet, add it
+    if (switchError.code === 4902) {
+      try {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: MONAD_CHAIN_ID_HEX,
+              chainName: MONAD_CHAIN_NAME,
+              nativeCurrency: {
+                name: "Monad Testnet Token",
+                symbol: "tMON", // adjust if different
+                decimals: 18,
+              },
+              rpcUrls: [MONAD_RPC_URL],
+              blockExplorerUrls: ["https://testnet.monadexplorer.com"], // adjust if you have official explorer
+            },
+          ],
+        });
+        console.log("✅ Monad Testnet added & switched");
+      } catch (addError) {
+        console.error("❌ Failed to add Monad Testnet:", addError);
+        alert("Please manually add Monad Testnet to your wallet.");
+      }
+    } else {
+      console.error("❌ Failed to switch network:", switchError);
+    }
   }
 }
 
 // Disconnect wallet
 function disconnectWallet() {
   localStorage.removeItem("wallet");
-
-  // Reset UI
   updateWalletUI(null);
 
-  // Close dropdown
   const container = document.getElementById("walletContainer");
   if (container) container.classList.remove("active");
 
@@ -76,18 +123,16 @@ function startGame() {
     alert("❌ Please connect your wallet first!");
     return;
   }
-  window.location.href = "/paystart"; // ✅ matches backend route
+  window.location.href = "/paystart"; // ✅ backend route
 }
 
 // --------------------
 // Event Listeners
 // --------------------
 window.addEventListener("DOMContentLoaded", () => {
-  // Restore wallet if already saved
   const saved = localStorage.getItem("wallet");
   updateWalletUI(saved);
 
-  // Bind disconnect button
   const disconnectBtn = document.getElementById("disconnectBtn");
   if (disconnectBtn) {
     disconnectBtn.addEventListener("click", (e) => {
@@ -96,14 +141,12 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Bind Start Playing button
   const startBtn = document.getElementById("startGameBtn");
   if (startBtn) {
     startBtn.addEventListener("click", startGame);
   }
 });
 
-// Close dropdown when clicking outside
 document.addEventListener("click", (e) => {
   const container = document.getElementById("walletContainer");
   if (container && !container.contains(e.target)) {
