@@ -39,7 +39,7 @@ const app = express();
 
 const allowedOrigins = [
   "https://test-monallion.netlify.app",
-  "http://localhost:3000",
+  "http://localhost:8080",
 ];
 
 app.use(
@@ -437,3 +437,4 @@ const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
