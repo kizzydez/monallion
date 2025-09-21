@@ -2,30 +2,35 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
+  # Step 1: Build Docker image
+  - name: "gcr.io/cloud-builders/docker"
     args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/monallion-backend:latest'
-      - '-f'
-      - 'Dockerfile'
-      - '.'
+      - "build"
+      - "-t"
+      - "gcr.io/$PROJECT_ID/monallion-backend:latest"
+      - "-f"
+      - "Dockerfile"
+      - "."
 
-  - name: 'gcr.io/cloud-builders/docker'
+  # Step 2: Push image to Container Registry (or Artifact Registry)
+  - name: "gcr.io/cloud-builders/docker"
     args:
-      - 'push'
-      - 'gcr.io/$PROJECT_ID/monallion-backend:latest'
+      - "push"
+      - "gcr.io/$PROJECT_ID/monallion-backend:latest"
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  # Step 3: Deploy to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
     args:
-      - 'run'
-      - 'deploy'
-      - 'monallion-backend'
-      - '--image=gcr.io/$PROJECT_ID/monallion-backend:latest'
-      - '--platform=managed'
-      - '--region=us-central1'
-      - '--allow-unauthenticated'
+      - "run"
+      - "deploy"
+      - "monallion-backend"
+      - "--image=gcr.io/$PROJECT_ID/monallion-backend:latest"
+      - "--platform=managed"
+      - "--region=us-central1"
+      - "--allow-unauthenticated"
+      - "--port=8080"
+      - "--quiet"
 
 images:
-  - 'gcr.io/$PROJECT_ID/monallion-backend:latest'
+  - "gcr.io/$PROJECT_ID/monallion-backend:latest"
